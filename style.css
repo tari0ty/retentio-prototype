@@ -392,11 +392,13 @@ body { padding: 0 12px; }         /* keep a small page gutter on mobile */
 
 /* Logo Styling */
 .nav-logo a {
+  display: inline-block;
   font-size: 1.8rem;
   font-weight: 800;
   color: #ffffff;
   text-decoration: none; /* Removes the underline */
   font-family: sans-serif;
+  animation: randomPulse 2s infinite ease-in-out;
 }
 
 /* The horizontal links list container */
@@ -457,6 +459,7 @@ body { padding: 0 12px; }         /* keep a small page gutter on mobile */
   .nav-links.open{ display: flex; }
   .nav-links li{ margin: 0; }
   .nav-links a{ color: #fff; font-size: 1rem; }
+  .nav-logo a { font-size: 1.4rem; }
   #auth-btn{ padding: 8px 12px; }
   .game-navbar{ padding: 10px 12px; }
 }
@@ -523,14 +526,19 @@ body { padding: 0 12px; }         /* keep a small page gutter on mobile */
 
 /* The thumb handle (the draggable bar element) */
 ::-webkit-scrollbar-thumb {
-    background: #6563ff;  /* Matches your app primary purple style */
+    background-color: #6563ff;  /* Matches your app primary purple style */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 2c-1.1 0-2 .9-2 2v1.1c-.7.1-1.4.4-2 .9s-1.1 1.1-1.4 1.8c-.4 1.4-.4 2.8-.4 4.2 0 2.8 1.7 5.1 4.1 6v1.5c0 .8.7 1.5 1.5 1.5h1c.8 0 1.5-.7 1.5-1.5V18c2.4-.9 4.1-3.2 4.1-6 0-1.6 0-3-.2-4.2-.3-.7-.7-1.3-1.4-1.8-.6-.5-1.3-.8-2-.9V4c0-1.1-.9-2-2-2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px 12px;
     border-radius: 100px; /* Makes it a pill shape with round capsule edges */
     border: 2px solid transparent; /* Creates padding space around the thumb */
 }
 
 /* Changes thumb color slightly when you hover or hold it down */
 ::-webkit-scrollbar-thumb:hover {
-    background: #7b79ff;  /* Lighter purple hover state */
+    background-color: #7b79ff;  /* Lighter purple hover state */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 2c-1.1 0-2 .9-2 2v1.1c-.7.1-1.4.4-2 .9s-1.1 1.1-1.4 1.8c-.4 1.4-.4 2.8-.4 4.2 0 2.8 1.7 5.1 4.1 6v1.5c0 .8.7 1.5 1.5 1.5h1c.8 0 1.5-.7 1.5-1.5V18c2.4-.9 4.1-3.2 4.1-6 0-1.6 0-3-.2-4.2-.3-.7-.7-1.3-1.4-1.8-.6-.5-1.3-.8-2-.9V4c0-1.1-.9-2-2-2z'/%3E%3C/svg%3E");
 }
 
 /* 2. For Mozilla Firefox support fallback */
