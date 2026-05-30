@@ -356,6 +356,77 @@ body{
 .upload-wrapper .back{ margin-top: 12px }
 .upload-wrapper .back a{ color: rgba(255,255,255,0.9); text-decoration: none }
 
+
+/* Container for the entire navbar */
+.game-navbar {
+  display: flex;
+  justify-content: space-between; /* Pushes logo to left, links to right */
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1); /* Adds a subtle glass effect */
+  padding: 15px 40px;
+  width: 100%;
+  box-sizing: border-box;
+   position: sticky;      /* Tells the browser to stick to the screen */
+  top: 0;                /* Aligns it perfectly to the very top edge */
+  z-index: 1000;
+}
+
+/* Logo Styling */
+.nav-logo a {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-decoration: none; /* Removes the underline */
+  font-family: sans-serif;
+}
+
+/* The horizontal links list container */
+.nav-links {
+  display: flex;
+  align-items: center;
+  list-style: none; /* Removes the bullet points */
+  gap: 25px; /* Creates spacing between each item */
+  margin: 0;
+  padding: 0;
+}
+
+/* Individual Link Typography */
+.nav-links a {
+  color: #ffffff;
+  text-decoration: none; /* Removes underlines from links */
+  font-weight: 600;
+  font-size: 1.1rem;
+  font-family: sans-serif;
+  transition: opacity 0.2s ease;
+}
+
+.nav-links a:hover {
+  opacity: 0.8; /* Subtle change when hovering */
+}
+
+/* Clean Sign Up Button Overrides */
+#auth-btn {
+  background-color: #ffffff;
+  color: #635bff; /* Purple text to match your background theme */
+  border: none;
+  padding: 10px 20px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.1s ease;
+}
+
+#auth-btn:hover {
+  transform: scale(1.05); /* Quick pop effect on hover */
+}
+
+
+
+
+
+
+
 /* ==========================================
    CUSTOM SYSTEM SCROLLBAR STYLES 
    ========================================== */
@@ -388,4 +459,115 @@ body{
 html {
     scrollbar-width: thin;                 /* Options: auto, thin, none */
     scrollbar-color: #6563ff rgba(101, 99, 255, 0.05); /* format: [thumb color] [track color] */
+}
+
+
+/* Authhhn */
+.modal-overlay {
+  display: none; 
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(8px); /* Beautiful modern background blur */
+  z-index: 2000; /* Stays above your sticky navbar */
+  justify-content: center;
+  align-items: center;
+}
+
+/* Active class applied via JS to show the modal */
+.modal-overlay.active {
+  display: flex !important; /* Flexbox centering when active */
+}
+
+/* The centered white sign-up card */
+.modal-card {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-family: sans-serif;
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #333;
+}
+
+.modal-card h2 {
+  margin: 0 0 5px 0;
+  color: #1a1a2e;
+  font-size: 1.8rem;
+}
+
+.modal-card p {
+  color: #666;
+  margin: 0 0 25px 0;
+  font-size: 0.95rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #1a1a2e;
+}
+
+.input-group input {
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #635bff; /* Purple border focus color */
+}
+
+.action-btn {
+  width: 100%;
+  background-color: #635bff;
+  color: white;
+  border: none;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #4b43d1;
+}
+
+.switch-mode-text {
+  text-align: center;
+  margin-top: 20px !important;
+  font-size: 0.9rem !important;
+}
+
+.switch-mode-text a {
+  color: #635bff;
+  text-decoration: none;
+  font-weight: 600;
 }
