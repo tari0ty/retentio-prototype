@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Upload Ad — retentiOo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="upload-wrapper">
+    <h1>Place Your Ad</h1>
+    <p class="hint">Drop an image here or click to select. Enter the destination URL and generate an embeddable snippet.</p>
+
+    <div id="drop-area" class="drop-area">
+      <input type="file" id="fileElem" accept="image/*" style="display:none">
+      <label for="fileElem" id="fileLabel">Drop image here or click to upload</label>
+      <div id="preview" class="preview"></div>
+    </div>
+
+    <label for="ad-link">Destination URL</label>
+    <input id="ad-link" type="url" placeholder="https://instagram.com/yourpage" />
+
+    <button id="generate">Generate snippet</button>
+
+    <label for="snippet">HTML Snippet</label>
+    <textarea id="snippet" rows="6" readonly></textarea>
+    <button id="copy">Copy to clipboard</button>
+
+    <p class="back"><a href="index.html">← Back to game</a></p>
+  </div>
+
+  <script src="upload.js"></script>
+</body>
+</html>
