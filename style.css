@@ -17,13 +17,14 @@ body{
 }
 
 .app-header {
+    margin-top: 16px;
     margin-bottom: 18px;
     text-align: center;
 }
 
 .app-header h1 {
     color: #ffffff;
-    font-size: 3.5rem;
+    font-size: 2rem;
     font-weight: 800;
     letter-spacing: 0.04em;
     display: inline-block;
@@ -71,7 +72,7 @@ body{
     background: #f7f8ff; /* Fallback color if video layer fails to load */
     text-align: center;
     box-shadow: 0 14px 30px rgba(101, 99, 255, 0.12);
-    border: 1px solid rgba(101, 99, 255, 0.18);
+    border: 2px solid rgba(101, 99, 255, 0.18);
 }
 
 /* New: Video Element Configuration */
@@ -87,6 +88,7 @@ body{
     /* CSS Blur effect settings */
     filter: blur(2px) brightness(0.85); /* Blurs and slightly darkens video for better foreground contrast */
     transform: scale(1.18); /* Scales video slightly up to hide raw edge bleed distortions */
+    
 }
 
 /* Foreground content sorting: Keeps text and buttons operational over the video */
@@ -197,6 +199,7 @@ body{
     margin-bottom: 24px;
     padding: 22px;
     background: #ffffff;
+    border : 5px solid rgba(101, 99, 255, 0.18);
     border-radius: 16px;
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
 }
@@ -352,3 +355,37 @@ body{
 .upload-wrapper button{ padding: 10px 14px; border-radius: 8px; background: #6b63ff; color: #fff; border: none; cursor: pointer }
 .upload-wrapper .back{ margin-top: 12px }
 .upload-wrapper .back a{ color: rgba(255,255,255,0.9); text-decoration: none }
+
+/* ==========================================
+   CUSTOM SYSTEM SCROLLBAR STYLES 
+   ========================================== */
+
+/* 1. For Chrome, Edge, Safari, and Opera */
+::-webkit-scrollbar {
+    width: 10px;          /* Width of the vertical scrollbar */
+    height: 10px;         /* Height of the horizontal scrollbar */
+}
+
+/* The track background (the empty area behind the handle) */
+::-webkit-scrollbar-track {
+    background: rgba(101, 99, 255, 0.05); /* Very light tinted purple track */
+    border-radius: 100px;
+}
+
+/* The thumb handle (the draggable bar element) */
+::-webkit-scrollbar-thumb {
+    background: #6563ff;  /* Matches your app primary purple style */
+    border-radius: 100px; /* Makes it a pill shape with round capsule edges */
+    border: 2px solid transparent; /* Creates padding space around the thumb */
+}
+
+/* Changes thumb color slightly when you hover or hold it down */
+::-webkit-scrollbar-thumb:hover {
+    background: #7b79ff;  /* Lighter purple hover state */
+}
+
+/* 2. For Mozilla Firefox support fallback */
+html {
+    scrollbar-width: thin;                 /* Options: auto, thin, none */
+    scrollbar-color: #6563ff rgba(101, 99, 255, 0.05); /* format: [thumb color] [track color] */
+}
