@@ -3,16 +3,31 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <title>Retentio by tari0ty </title>
+    <title>retentiOo</title>
     <link rel="stylesheet" href="style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Material Icon Link For Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   </head>
   <body>
+<div class="app-header">
+  <h1>retentiOo</h1>
+</div>
+
+<script>
+  const header = document.querySelector('.app-header h1');
+  const text = header.textContent;
+  
+  // Separate "retenti" from "O" and "o"
+  const baseText = text.slice(0, -2); // "retenti"
+  const bigO = text.slice(-2, -1);    // "O"
+  const smallO = text.slice(-1);       // "o"
+
+  // Wrap only the last two letters in spans
+  header.innerHTML = `${baseText}<span>${bigO}</span><span>${smallO}</span>`;
+</script>
 
 
-    
 
     <div class="wrapper">
         <ul class="cards">
@@ -155,6 +170,17 @@
                 <span class="stat-value" id="flips">0</span>
             </div>
         </div>
+    </div>
+    <div class="how-to-play">
+        <h2>📝 How to Play</h2>
+        
+        <ol>
+            <li><strong>Flip a Card:</strong> Click on any face-down card to reveal the hidden image beneath it.</li>
+            <li><strong>Find its Match:</strong> Click a second card to flip it over.</li>
+            <li><strong>The Result:</strong> <strong>It&apos;s a Match!</strong> The cards stay face-up.</li>
+            <li><strong>Not a Match?</strong> Both cards automatically flip back face-down after a brief moment. Memorize their positions!</li>
+            <li><strong>Win the Game:</strong> Keep turning over pairs until the entire board is revealed.</li>
+        </ol>
     </div>
 
 
