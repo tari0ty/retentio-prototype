@@ -196,7 +196,7 @@ body { padding: 0 12px; }         /* keep a small page gutter on mobile */
 
 .how-to-play p{
     margin-bottom: 14px;
-    font-size: 0.96rem;
+    font-size: 13px;
     line-height: 1.7;
     color: rgba(255, 255, 255, 0.88);
 }
@@ -398,7 +398,19 @@ body { padding: 0 12px; }         /* keep a small page gutter on mobile */
   color: #ffffff;
   text-decoration: none; /* Removes the underline */
   font-family: sans-serif;
+}
+
+.nav-logo a span {
+  display: inline-block;
   animation: randomPulse 2s infinite ease-in-out;
+}
+
+.nav-logo a span:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.nav-logo a span:nth-child(2) {
+  animation-delay: 0.7s;
 }
 
 /* The horizontal links list container */

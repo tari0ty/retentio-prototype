@@ -11,7 +11,7 @@
   </head>
   <body>
 
-    <nav class="game-navbar">
+<nav class="game-navbar">
   <!-- Left Side: Logo -->
   <div class="nav-logo">
     <a href="#">retentiOo</a>
@@ -32,24 +32,18 @@
 </nav>
 
 
-
-<div class="app-header">
-  <h1>retentiOo</h1>
-</div>
-
 <script>
-  const header = document.querySelector('.app-header h1');
-  const text = header.textContent;
-  
-  // Separate "retenti" from "O" and "o"
-  const baseText = text.slice(0, -2); // "retenti"
-  const bigO = text.slice(-2, -1);    // "O"
-  const smallO = text.slice(-1);       // "o"
-
-  // Wrap only the last two letters in spans
-  header.innerHTML = `${baseText}<span>${bigO}</span><span>${smallO}</span>`;
+  const navLogo = document.querySelector('.nav-logo a');
+  const navText = navLogo.textContent;
+  const navBase = navText.slice(0, -2);
+  const navBigO = navText.slice(-2, -1);
+  const navSmallO = navText.slice(-1);
+  navLogo.innerHTML = `${navBase}<span>${navBigO}</span><span>${navSmallO}</span>`;
 </script>
 
+    <div class="how-to-play">
+        <p>Retentio is the original Latin noun that directly means a retaining, holding back, restraining, or withholding. It is the root word for the modern English word retention.</p>
+    </div>
 
     <div class="wrapper">
         <ul class="cards">
@@ -209,7 +203,6 @@
     </span>
   </a>
 </div>
-
 
     <div class="how-to-play">
         <h2>📝 How to Play</h2>
