@@ -8,6 +8,8 @@
   font-family: 'Poppins', sans-serif;
 }
 body{
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -15,6 +17,22 @@ body{
     min-height: 100vh;
     background: linear-gradient(135deg, #6563ff, #7b79ff);
 }
+
+body { padding: 0 12px; }         /* keep a small page gutter on mobile */
+.wrapper { margin: 24px auto; }   /* centers wrapper regardless of body flex */
+.manual-ad-box { margin: 16px auto; } /* center ad box too */
+
+@media (max-width: 600px) {
+  .game-navbar { padding: 12px 12px; }
+  .nav-links { gap: 10px; flex-wrap: wrap; align-items: center; }
+  .nav-links a { font-size: 0.95rem; }
+  #auth-btn { padding: 8px 12px; font-size: 0.95rem; }
+}
+
+.nav-links li { white-space: nowrap; } /* avoid link text wrapping */
+
+.game-navbar > .container,
+.wrapper { max-width: 430px; margin: 0 auto; width: 100%; }
 
 .app-header {
     margin-top: 16px;
@@ -362,12 +380,13 @@ body{
   display: flex;
   justify-content: space-between; /* Pushes logo to left, links to right */
   align-items: center;
-  background-color: rgba(255, 255, 255, 0.1); /* Adds a subtle glass effect */
+  background-color: #2E317B; 
   padding: 15px 40px;
   width: 100%;
   box-sizing: border-box;
-   position: sticky;      /* Tells the browser to stick to the screen */
-  top: 0;                /* Aligns it perfectly to the very top edge */
+  position: sticky;      /* Tells the browser to stick to the screen */
+  top: 0;        
+  left: 0;               /* Aligns it perfectly to the very left edge */
   z-index: 1000;
 }
 
@@ -402,6 +421,65 @@ body{
 
 .nav-links a:hover {
   opacity: 0.8; /* Subtle change when hovering */
+}
+
+/* Hamburger toggle (hidden on desktop) */
+.nav-toggle{
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+}
+.nav-toggle .hamburger{
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #fff;
+  position: relative;
+}
+.nav-toggle .hamburger::before,
+.nav-toggle .hamburger::after{
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 2px;
+  background: #fff;
+}
+.nav-toggle .hamburger::before{ top: -7px; }
+.nav-toggle .hamburger::after{ top: 7px; }
+
+/* Responsive: mobile navbar behaviour */
+@media (max-width: 700px){
+  .nav-toggle{ display: inline-flex; }
+  .nav-links{ display: none; position: absolute; top: 64px; right: 12px; background: linear-gradient(135deg,#6563ff,#7b79ff); padding: 12px; border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,0.18); flex-direction: column; gap: 12px; min-width: 160px; }
+  .nav-links.open{ display: flex; }
+  .nav-links li{ margin: 0; }
+  .nav-links a{ color: #fff; font-size: 1rem; }
+  #auth-btn{ padding: 8px 12px; }
+  .game-navbar{ padding: 10px 12px; }
+}
+
+/* Keep wrapper centered reliably */
+.wrapper{ margin: 24px auto; }
+
+/* Tighter card spacing on small screens so the board fits */
+@media (max-width: 420px) {
+  .cards {
+    height: 290px; /* slightly smaller board height */
+    gap: 6px; /* reduce spacing between cards */
+  }
+  .cards .card{
+    height: calc(25% - 6px);
+    width: calc(25% - 6px);
+    border-radius: 8px;
+  }
+  .card .front-view span{
+    font-size: 36px; /* slightly smaller icon */
+  }
+  .wrapper{ padding: 16px; }
+  .stats-container{ padding: 8px 10px; }
 }
 
 /* Clean Sign Up Button Overrides */
