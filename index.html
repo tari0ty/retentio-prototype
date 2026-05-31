@@ -21,6 +21,7 @@
       <div class="loading-bar-container">
         <div class="loading-bar"></div>
       </div>
+      <p class="preloader-definition">Retentio — Latin for a retaining, holding back, or withholding. The root of the word <em>retention</em>.</p>
     </div>
   </div>
 
@@ -122,16 +123,8 @@
       </ul>
     </nav>
 
-    <!-- Definition block -->
-    <div class="how-to-play">
-      <p>Retentio is the original Latin noun that directly means a retaining, holding back, restraining, or withholding. It is the root word for the modern English word retention.</p>
-    </div>
-
     <!-- Game board -->
     <div class="wrapper">
-      <ul class="cards" id="game-cards">
-        <!-- Cards injected here by JS -->
-      </ul>
       <div class="stats-container">
         <div class="stat">
           <span class="stat-label">Subject</span>
@@ -150,10 +143,13 @@
           <span class="stat-value" id="flips">0</span>
         </div>
       </div>
+      <ul class="cards" id="game-cards">
+        <!-- Cards injected here by JS -->
+      </ul>
     </div>
 
     <!-- Ad box -->
-    <div class="manual-ad-box">
+    <div class="manual-ad-box" style="display: none;">
       <video autoplay loop muted playsinline class="bg-video">
         <source src="./ads/Ad.mp4" type="video/mp4">
       </video>

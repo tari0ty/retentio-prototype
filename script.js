@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ----------------------------------------------------------
   //  PHASE 1 — PRELOADER
   // ----------------------------------------------------------
-  const LOAD_DURATION = 2500; // ms
+  const LOAD_DURATION = 5000; // ms
 
   if (preloader && loadingBar) {
     loadingBar.style.transitionDuration = `${LOAD_DURATION}ms`;
@@ -225,7 +225,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       li.innerHTML = `
         <div class="view front-view">
-          <span class="material-icons">question_mark</span>
+          <span class="material-icons">?</span>
         </div>
         <div class="view back-view">
           <img src="${imgSrc}" alt="card image">
