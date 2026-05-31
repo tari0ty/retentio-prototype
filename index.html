@@ -1,273 +1,214 @@
 <!DOCTYPE html>
-
 <html lang="en" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <title>retentiOo</title>
-    <link rel="stylesheet" href="style.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Material Icon Link For Icons -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-  </head>
-  <body>
+<head>
+  <meta charset="utf-8">
+  <title>retentiOo</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
 
-<nav class="game-navbar">
-  <!-- Left Side: Logo -->
-  <div class="nav-logo">
-    <a href="#">retentiOo</a>
+  <!-- ============================================================
+       LAYER 1: PRELOADER
+  ============================================================ -->
+  <div id="preloader">
+    <div class="loader-container">
+      <h1 class="loading-logo">
+        <span>r</span><span>e</span><span>t</span><span>e</span><span>n</span><span>t</span><span>i</span><span>O</span><span>o</span>
+      </h1>
+      <div class="loading-bar-container">
+        <div class="loading-bar"></div>
+      </div>
+    </div>
   </div>
 
-    <!-- Mobile toggle button -->
-    <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
-        <span class="hamburger"></span>
-    </button>
+  <!-- ============================================================
+       LAYER 2: ONBOARDING QUIZ
+  ============================================================ -->
+  <div id="quiz-screen" class="hidden-layer">
+    <div class="quiz-container">
 
-    <!-- Right Side: Links and Button -->
-    <ul class="nav-links">
-    <li><a href="#how-to-play" class="active">How to Play</a></li>
-    <li><a href="#leaderboard">Leaderboard</a></li>
-    
-    <li><button id="auth-btn">Sign Up</button></li>
-  </ul>
-</nav>
+      <!-- Progress stars -->
+      <div class="quiz-progress">
+        <span class="step-star active" id="star-1">⭐</span>
+        <span class="step-star" id="star-2">⭐</span>
+        <span class="step-star" id="star-3">⭐</span>
+      </div>
 
-
-<script>
-  const navLogo = document.querySelector('.nav-logo a');
-  const navText = navLogo.textContent;
-  const navBase = navText.slice(0, -2);
-  const navBigO = navText.slice(-2, -1);
-  const navSmallO = navText.slice(-1);
-  navLogo.innerHTML = `${navBase}<span>${navBigO}</span><span>${navSmallO}</span>`;
-</script>
-
-    <div class="how-to-play">
-        <p>Retentio is the original Latin noun that directly means a retaining, holding back, restraining, or withholding. It is the root word for the modern English word retention.</p>
-    </div>
-
-    <div class="wrapper">
-        <ul class="cards">
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-1.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-2.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-3.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-4.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-5.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-6.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-7.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-8.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-1.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-2.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-3.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-4.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-5.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-6.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-7.png" alt="card-img">
-                </div>
-            </li>
-            <li class="card">
-                <div class="view front-view">
-                    <span class="material-icons">question_mark</span>
-                </div>
-                <div class="view back-view">
-                    <img src="images/img-8.png" alt="card-img">
-                </div>
-            </li>
-        </ul>
-        <div class="stats-container">
-            <div class="stat">
-                <span class="stat-label">Time:</span>
-                <span class="stat-value" id="timer">0:00</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Flips:</span>
-                <span class="stat-value" id="flips">0</span>
-            </div>
+      <!-- Step 1: Topic -->
+      <div class="quiz-step" id="step-1">
+        <h2>Pick Your Adventure!</h2>
+        <div class="kid-grid">
+          <button class="kid-card" data-topic="animals"><span class="kid-emoji">🦁</span><span class="kid-label">Animals</span></button>
+          <button class="kid-card" data-topic="space"><span class="kid-emoji">🚀</span><span class="kid-label">Space</span></button>
+          <button class="kid-card" data-topic="dinos"><span class="kid-emoji">🦖</span><span class="kid-label">Dinos</span></button>
+          <button class="kid-card" data-topic="ocean"><span class="kid-emoji">🐬</span><span class="kid-label">Ocean</span></button>
         </div>
+      </div>
+
+      <!-- Step 2: Reward -->
+      <div class="quiz-step hidden-layer" id="step-2">
+        <h2>Choose Your Reward Goal!</h2>
+        <div class="kid-grid">
+          <button class="kid-card" data-reward="trophy"><span class="kid-emoji">🏆</span><span class="kid-label">Trophies</span></button>
+          <button class="kid-card" data-reward="gem"><span class="kid-emoji">💎</span><span class="kid-label">Gems</span></button>
+          <button class="kid-card" data-reward="sticker"><span class="kid-emoji">🎨</span><span class="kid-label">Stickers</span></button>
+          <button class="kid-card" data-reward="star"><span class="kid-emoji">👑</span><span class="kid-label">Stars</span></button>
+        </div>
+      </div>
+
+      <!-- Step 3: Avatar -->
+      <div class="quiz-step hidden-layer" id="step-3">
+        <h2>Choose Your Avatar!</h2>
+        <div class="kid-grid">
+          <button class="kid-card avatar-card" data-avatar="unicorn">🦄</button>
+          <button class="kid-card avatar-card" data-avatar="dragon">🐲</button>
+          <button class="kid-card avatar-card" data-avatar="robot">🤖</button>
+          <button class="kid-card avatar-card" data-avatar="alien">👽</button>
+        </div>
+      </div>
+
     </div>
+  </div>
 
-<div class="manual-ad-box">
-  <!-- The Background Video Layer using relative workspace path -->
-  <video autoplay loop muted playsinline class="bg-video">
-    <source src="./ads/Ad.mp4" type="video/mp4">
-  </video>
+  <!-- ============================================================
+       LAYER 3: ADVENTURE MAP
+  ============================================================ -->
+  <div id="map-screen" class="hidden-layer">
+    <div class="map-inner">
 
-  <!-- Content Layer -->
-  <p class="ad-label">To place your Ad</p>
-  <a href="https://wa.me" class="ad-cta" target="_blank" rel="noopener noreferrer">
-    <span class="ad-text">Contact</span>
-    <span class="brand-circle">
-      <img src="images/logo.png" alt="tari0ty logo" class="circle-img">
-    </span>
-  </a>
-</div>
+      <div class="map-header">
+        <div class="player-badge"><span id="map-avatar">🦄</span> <span id="map-playername">Player</span></div>
+        <div class="map-stats">🔥 <span id="streak-count">1</span> Day Streak</div>
+      </div>
 
+      <h2 class="map-title">Your Progress Path</h2>
+
+      <div class="adventure-path">
+        <button class="level-node active-level" data-level="1"><span class="level-number">1</span><span class="level-status">▶️</span></button>
+        <button class="level-node locked-level" data-level="2" disabled><span class="level-number">2</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="3" disabled><span class="level-number">3</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="4" disabled><span class="level-number">4</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="5" disabled><span class="level-number">5</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="6" disabled><span class="level-number">6</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="7" disabled><span class="level-number">7</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="8" disabled><span class="level-number">8</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="9" disabled><span class="level-number">9</span><span>🔒</span></button>
+        <button class="level-node locked-level" data-level="10" disabled><span class="level-number">10</span><span>🏁</span></button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       LAYER 4: MAIN GAME
+  ============================================================ -->
+  <div id="game-screen" class="hidden-layer">
+
+    <!-- Navbar -->
+    <nav class="game-navbar">
+      <div class="nav-logo">
+        <a href="#" id="nav-logo-link">retentiOo</a>
+      </div>
+      <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+        <span class="hamburger"></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="#how-to-play">How to Play</a></li>
+        <li><a href="#leaderboard">Leaderboard</a></li>
+        <li><button id="auth-btn">Sign Up</button></li>
+      </ul>
+    </nav>
+
+    <!-- Definition block -->
     <div class="how-to-play">
-        <h2>📝 How to Play</h2>
-        
-        <ol>
-            <li><strong>Flip a Card:</strong> Click on any face-down card to reveal the hidden image beneath it.</li>
-            <li><strong>Find its Match:</strong> Click a second card to flip it over.</li>
-            <li><strong>The Result:</strong> <strong>It&apos;s a Match!</strong> The cards stay face-up.</li>
-            <li><strong>Not a Match?</strong> Both cards automatically flip back face-down after a brief moment. Memorize their positions!</li>
-            <li><strong>Win the Game:</strong> Keep turning over pairs until the entire board is revealed.</li>
-        </ol>
+      <p>Retentio is the original Latin noun that directly means a retaining, holding back, restraining, or withholding. It is the root word for the modern English word retention.</p>
     </div>
 
-    <!-- authentication-->
-<div id="auth-modal" class="modal-overlay">
-  <!-- The actual sign-up card container -->
-  <div class="modal-card">
-    <button id="close-modal-btn" class="close-btn">&times;</button>
-    
-    <h2 id="modal-title">Create Account</h2>
-    <p id="modal-subtitle">Join retentiOo & Dominate the Leaderboard!</p>
-
-    <form id="auth-form">
-      <div class="input-group" id="username-wrapper">
-        <label for="auth-username">Username</label>
-        <input type="text" id="auth-username" placeholder="Choose a nickname" required>
+    <!-- Game board -->
+    <div class="wrapper">
+      <ul class="cards" id="game-cards">
+        <!-- Cards injected here by JS -->
+      </ul>
+      <div class="stats-container">
+        <div class="stat">
+          <span class="stat-label">Subject</span>
+          <span class="stat-value" id="current-subject-label">-</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Level</span>
+          <span class="stat-value" id="current-level-label">1</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Time</span>
+          <span class="stat-value" id="timer">0:00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Flips</span>
+          <span class="stat-value" id="flips">0</span>
+        </div>
       </div>
+    </div>
 
-      <div class="input-group">
-        <label for="auth-email">Email Address</label>
-        <input type="email" id="auth-email" placeholder="name@example.com" required>
-      </div>
+    <!-- Ad box -->
+    <div class="manual-ad-box">
+      <video autoplay loop muted playsinline class="bg-video">
+        <source src="./ads/Ad.mp4" type="video/mp4">
+      </video>
+      <p class="ad-label">To place your Ad</p>
+      <a href="https://wa.me/2348000000000" class="ad-cta" target="_blank" rel="noopener noreferrer">
+        <span class="ad-text">Contact</span>
+        <span class="brand-circle">
+          <img src="images/logo.png" alt="retentiOo logo" class="circle-img">
+        </span>
+      </a>
+    </div>
 
-      <div class="input-group">
-        <label for="auth-password">Password</label>
-        <input type="password" id="auth-password" placeholder="••••••••" required>
-      </div>
+    <!-- How to play -->
+    <div class="how-to-play" id="how-to-play">
+      <h2>📝 How to Play</h2>
+      <ol>
+        <li><strong>Flip a Card:</strong> Click any face-down card to reveal the hidden image.</li>
+        <li><strong>Find its Match:</strong> Click a second card to flip it over.</li>
+        <li><strong>It's a Match!</strong> Matched cards stay face-up.</li>
+        <li><strong>Not a Match?</strong> Both cards flip back face-down. Memorize their positions!</li>
+        <li><strong>Win the Game:</strong> Match all pairs to complete the level.</li>
+      </ol>
+    </div>
 
-      <button type="submit" id="submit-auth-btn" class="action-btn">Sign Up</button>
-    </form>
+  </div><!-- end #game-screen -->
 
-    <p class="switch-mode-text">
-      Already have an account? <a href="#" id="switch-auth-mode">Log In</a>
-    </p>
+  <!-- ============================================================
+       AUTH MODAL
+  ============================================================ -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button id="close-modal-btn" class="close-btn">&times;</button>
+      <h2 id="modal-title">Create Account</h2>
+      <p id="modal-subtitle">Join retentiOo &amp; Dominate the Leaderboard!</p>
+      <form id="auth-form">
+        <div class="input-group" id="username-wrapper">
+          <label for="auth-username">Username</label>
+          <input type="text" id="auth-username" placeholder="Choose a nickname" required>
+        </div>
+        <div class="input-group">
+          <label for="auth-email">Email Address</label>
+          <input type="email" id="auth-email" placeholder="name@example.com" required>
+        </div>
+        <div class="input-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" id="submit-auth-btn" class="action-btn">Sign Up</button>
+      </form>
+      <p class="switch-mode-text">
+        Already have an account? <a href="#" id="switch-auth-mode">Log In</a>
+      </p>
+    </div>
   </div>
-</div>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
-
-
-<!-- Custom Typographic Preloader Overlay -->
-<div id="preloader">
-  <div class="loader-container">
-    <!-- Extracted Typographic Logo Structure -->
-    <h1 class="loading-logo">
-      retenti<span>O</span><span>o</span>
-    </h1>
-    
-    <!-- New Matching Horizontal Progress Bar -->
-    <div class="loading-bar-container">
-      <div class="loading-bar"></div>
-    </div>
-  </div>
-</div>
-
-
-
+</html>
