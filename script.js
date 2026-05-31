@@ -211,3 +211,34 @@ if (authForm) {
         authForm.reset();
     });
 }
+
+
+// --- ACCURATE PROGRESS PRELOADER CONTROLLER ---
+document.addEventListener("DOMContentLoaded", function () {
+  const preloader = document.getElementById("preloader");
+  const loadingBar = document.querySelector(".loading-bar");
+  
+  if (preloader && loadingBar) {
+    // 1. MANUALLY SET YOUR DURATION HERE (e.g., 2500 = 2.5 seconds)
+    const loadingDuration = 5000; 
+
+    // 2. Link the CSS transition time to match your loading duration exactly
+    loadingBar.style.transitionDuration = `${loadingDuration}ms`;
+
+    // 3. Tiny delay ensures the browser registers the 0% start state before moving to 100%
+    setTimeout(() => {
+      loadingBar.style.width = "100%";
+    }, 50);
+
+    // 4. Fade out the screen the exact moment the bar finishes loading
+    setTimeout(() => {
+      preloader.classList.add("preloader-fade-out");
+      
+      // Clean up and completely remove the elements from your page structure
+      setTimeout(() => {
+        preloader.remove();
+      }, 500); // Matches the 0.5s CSS ease fade duration
+    }, loadingDuration + 50);
+  }
+});
+
