@@ -26,38 +26,122 @@
   </div>
 
   <!-- ============================================================
-       LAYER 2: ONBOARDING QUIZ (2 steps — Reward & Avatar)
+       LAYER 2: TUTORIAL (new players only)
+  ============================================================ -->
+  <div id="tutorial-screen" class="hidden-layer">
+
+    <!-- Skip button always visible -->
+    <button id="tutorial-skip" class="tutorial-skip-btn">Skip Tutorial</button>
+
+    <!-- Progress dots -->
+    <div class="tutorial-progress">
+      <span class="t-dot active" id="t-dot-1"></span>
+      <span class="t-dot" id="t-dot-2"></span>
+      <span class="t-dot" id="t-dot-3"></span>
+    </div>
+
+    <!-- STEP 1: Learn to Flip -->
+    <div class="tutorial-step" id="t-step-1">
+      <h2 class="tutorial-title">Learn to Flip!</h2>
+      <p class="tutorial-text">Tap any card to reveal the hidden image.</p>
+
+      <div class="tutorial-stage">
+        <div class="t-finger" id="t-finger">👆</div>
+        <div class="t-card" id="t-card-flip">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🦁</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="tutorial-next-btn" id="t-next-1" disabled>Next →</button>
+    </div>
+
+    <!-- STEP 2: Find the Match -->
+    <div class="tutorial-step hidden-layer" id="t-step-2">
+      <h2 class="tutorial-title">Find the Match!</h2>
+      <p class="tutorial-text">Tap another card to find its match. Remember its position if you miss!</p>
+
+      <div class="tutorial-stage">
+        <!-- Already flipped card -->
+        <div class="t-card t-card-flipped">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🦁</div>
+          </div>
+        </div>
+        <!-- Wrong card -->
+        <div class="t-card" id="t-card-wrong">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🚀</div>
+          </div>
+        </div>
+        <!-- Correct card -->
+        <div class="t-card" id="t-card-correct">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🦁</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="tutorial-hint" id="t-hint-2">Tap one of the face-down cards!</p>
+      <button class="tutorial-next-btn" id="t-next-2" disabled>Next →</button>
+    </div>
+
+    <!-- STEP 3: Beat the Clock -->
+    <div class="tutorial-step hidden-layer" id="t-step-3">
+      <h2 class="tutorial-title">Beat the Clock!</h2>
+      <p class="tutorial-text">Clear all pairs quickly! Fewer flips and faster times rank you higher.</p>
+
+      <div class="tutorial-stage t-stage-hud">
+        <div class="t-hud">
+          <div class="t-hud-stat">
+            <span class="t-hud-icon">🕒</span>
+            <span class="t-hud-val" id="t-timer">0:00</span>
+          </div>
+          <div class="t-hud-stat">
+            <span class="t-hud-icon">🔄</span>
+            <span class="t-hud-val" id="t-flips">0 Flips</span>
+          </div>
+        </div>
+        <div class="t-perfect-badge hidden-layer" id="t-perfect-badge">
+          ⭐⭐⭐ Perfect Score!
+        </div>
+      </div>
+
+      <button class="tutorial-next-btn tutorial-start-btn" id="t-next-3">🚀 Start Playing!</button>
+    </div>
+
+  </div><!-- end tutorial -->
+
+  <!-- ============================================================
+       LAYER 3: ONBOARDING — Nickname + Avatar
   ============================================================ -->
   <div id="quiz-screen" class="hidden-layer">
     <div class="quiz-container">
+      <h2>Create Your Player!</h2>
 
-      <!-- Step 1: Reward -->
-      <div class="quiz-step" id="step-1">
-        <h2>Choose Your Reward Goal!</h2>
-        <div class="kid-grid">
-          <button class="kid-card" data-reward="trophy"><span class="kid-emoji">🏆</span><span class="kid-label">Trophies</span></button>
-          <button class="kid-card" data-reward="gem"><span class="kid-emoji">💎</span><span class="kid-label">Gems</span></button>
-          <button class="kid-card" data-reward="sticker"><span class="kid-emoji">🎨</span><span class="kid-label">Stickers</span></button>
-          <button class="kid-card" data-reward="star"><span class="kid-emoji">👑</span><span class="kid-label">Stars</span></button>
-        </div>
+      <div class="input-group quiz-nickname-group">
+        <label for="quiz-nickname">Your Nickname</label>
+        <input type="text" id="quiz-nickname" placeholder="e.g. SuperBrain" maxlength="20" autocomplete="off">
+        <span class="nickname-error hidden-layer" id="nickname-error">Please enter a nickname!</span>
       </div>
 
-      <!-- Step 2: Avatar -->
-      <div class="quiz-step hidden-layer" id="step-2">
-        <h2>Choose Your Avatar!</h2>
-        <div class="kid-grid">
-          <button class="kid-card avatar-card" data-avatar="unicorn">🦄</button>
-          <button class="kid-card avatar-card" data-avatar="dragon">🐲</button>
-          <button class="kid-card avatar-card" data-avatar="robot">🤖</button>
-          <button class="kid-card avatar-card" data-avatar="alien">👽</button>
-        </div>
+      <p class="quiz-avatar-label">Pick Your Avatar</p>
+      <div class="kid-grid">
+        <button class="kid-card avatar-card" data-avatar="unicorn">🦄</button>
+        <button class="kid-card avatar-card" data-avatar="dragon">🐲</button>
+        <button class="kid-card avatar-card" data-avatar="robot">🤖</button>
+        <button class="kid-card avatar-card" data-avatar="alien">👽</button>
       </div>
-
     </div>
   </div>
 
   <!-- ============================================================
-       LAYER 3: QUEST SELECT (5 Quests)
+       LAYER 4: QUEST SELECT
   ============================================================ -->
   <div id="quest-select-screen" class="hidden-layer">
     <div class="quest-select-inner">
@@ -66,40 +150,31 @@
         <div class="map-stats">🔥 <span id="qs-streak">1</span> Day Streak</div>
       </div>
       <h2 class="map-title">Choose Your Quest!</h2>
-      <div class="quest-list" id="quest-list">
-        <!-- Injected by JS -->
-      </div>
+      <div class="quest-list" id="quest-list"></div>
     </div>
   </div>
 
   <!-- ============================================================
-       LAYER 4: QUEST SCREEN (10 Level Blocks)
+       LAYER 5: QUEST MAP
   ============================================================ -->
   <div id="map-screen" class="hidden-layer">
     <div class="map-inner">
-
       <div class="map-header">
         <button class="back-btn" id="back-to-quests">← Quests</button>
         <div class="player-badge"><span id="map-avatar">🦄</span></div>
         <div class="map-stats">🔥 <span id="streak-count">1</span> Day Streak</div>
       </div>
-
       <h2 class="map-title" id="quest-title">Quest 1</h2>
       <p class="quest-subtitle" id="quest-subtitle">Animals 🦁</p>
-
-      <div class="adventure-path" id="adventure-path">
-        <!-- Level blocks injected by JS -->
-      </div>
-
+      <div class="adventure-path" id="adventure-path"></div>
     </div>
   </div>
 
   <!-- ============================================================
-       LAYER 5: MAIN GAME
+       LAYER 6: MAIN GAME
   ============================================================ -->
   <div id="game-screen" class="hidden-layer">
 
-    <!-- Navbar -->
     <nav class="game-navbar">
       <div class="nav-logo">
         <a href="#" id="nav-logo-link">retentiOo</a>
@@ -107,14 +182,13 @@
       <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
         <span class="hamburger"></span>
       </button>
-      <ul class="nav-links">
+      <ul class="nav-links" id="nav-links">
         <li><a href="#how-to-play">How to Play</a></li>
-        <li><a href="#leaderboard">Leaderboard</a></li>
+        <li><a href="#" id="leaderboard-link">Leaderboard</a></li>
         <li><button id="auth-btn">Sign Up</button></li>
       </ul>
     </nav>
 
-    <!-- Game board -->
     <div class="wrapper">
       <div class="stats-container">
         <div class="stat">
@@ -134,12 +208,9 @@
           <span class="stat-value" id="flips">0</span>
         </div>
       </div>
-      <ul class="cards" id="game-cards">
-        <!-- Cards injected by JS -->
-      </ul>
+      <ul class="cards" id="game-cards"></ul>
     </div>
 
-    <!-- Ad box -->
     <div class="manual-ad-box" style="display: none;">
       <video autoplay loop muted playsinline class="bg-video">
         <source src="./ads/Ad.mp4" type="video/mp4">
@@ -153,7 +224,6 @@
       </a>
     </div>
 
-    <!-- How to play -->
     <div class="how-to-play" id="how-to-play">
       <h2>📝 How to Play</h2>
       <ol>
@@ -165,16 +235,79 @@
       </ol>
     </div>
 
-  </div><!-- end #game-screen -->
+  </div>
 
   <!-- ============================================================
-       WIN POPUP MODAL
+       PROFILE SCREEN
+  ============================================================ -->
+  <div id="profile-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button class="back-btn" id="back-from-profile">← Back</button>
+        <h2 class="panel-title">My Profile</h2>
+      </div>
+
+      <div class="profile-hero">
+        <div class="profile-avatar" id="profile-avatar">🦄</div>
+        <div class="profile-name" id="profile-name">Player</div>
+        <div class="profile-badge" id="profile-badge">Quest 1 · Level 1</div>
+        <div class="profile-rank-badge" id="profile-rank-badge">🏆 Global Rank #—</div>
+      </div>
+
+      <div class="profile-section">
+        <h3 class="section-title">My Progress</h3>
+        <div class="progress-cards" id="progress-cards"></div>
+      </div>
+
+      <div class="profile-section">
+        <h3 class="section-title">Best Stats Per Subject</h3>
+        <!-- Table header -->
+        <div class="stats-table-header">
+          <span>Subject</span>
+          <span>Best Flips</span>
+          <span>Best Time</span>
+        </div>
+        <div class="stats-table" id="stats-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       LEADERBOARD SCREEN
+  ============================================================ -->
+  <div id="leaderboard-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button class="back-btn" id="back-from-leaderboard">← Back</button>
+        <h2 class="panel-title">Leaderboard</h2>
+      </div>
+
+      <!-- Global leaderboard header -->
+      <div class="lb-global-header">
+        <span class="lb-col-head">Rank</span>
+        <span class="lb-col-head">Player</span>
+        <span class="lb-col-head">⭐ Stars</span>
+        <span class="lb-col-head">🔄 Flips</span>
+        <span class="lb-col-head">🕒 Time</span>
+      </div>
+
+      <div class="leaderboard-list" id="leaderboard-list"></div>
+      <p class="leaderboard-note">🔒 Log in to appear on the global leaderboard.</p>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       WIN MODAL
   ============================================================ -->
   <div id="win-modal" class="modal-overlay">
     <div class="modal-card win-card">
-      <div class="win-emoji" id="win-emoji">🏆</div>
       <h2 id="win-title">Level 1 Complete!</h2>
       <p id="win-quest-label" class="win-quest-label">Animals 🦁 — Mammals</p>
+      <div class="win-stars" id="win-stars">
+        <span class="win-star" id="win-star-1">☆</span>
+        <span class="win-star" id="win-star-2">☆</span>
+        <span class="win-star" id="win-star-3">☆</span>
+      </div>
       <div class="win-stats">
         <div class="win-stat">
           <span class="win-stat-label">Time</span>
@@ -185,8 +318,8 @@
           <span class="win-stat-value" id="win-flips">0</span>
         </div>
         <div class="win-stat">
-          <span class="win-stat-label">Reward</span>
-          <span class="win-stat-value" id="win-reward">🏆</span>
+          <span class="win-stat-label">Best</span>
+          <span class="win-stat-value" id="win-best">-</span>
         </div>
       </div>
       <div class="win-buttons">
