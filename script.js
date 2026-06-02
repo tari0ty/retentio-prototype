@@ -1,11 +1,29 @@
 // ============================================================
-//  retentiOo — script.js
+//  retentiOoo — script.js
 // ============================================================
 document.addEventListener("DOMContentLoaded", function () {
 
   // ----------------------------------------------------------
   //  DATA
   // ----------------------------------------------------------
+  const STORAGE_KEY = "retentiOoo_profile";
+  const LEGACY_STORAGE_KEY = "retentiOo_profile";
+
+  const GAMES = [
+    { id: "matchbox",       title: "Matchbox",       emoji: "🃏", category: "Memory",    status: "live", featured: true },
+    { id: "fraction-pizza", title: "Fraction Pizza", emoji: "🍕", category: "Math",      status: "soon", featured: true },
+    { id: "word-hive",      title: "Word Hive",      emoji: "🐝", category: "Reading",   status: "soon", featured: true },
+    { id: "logic-locks",    title: "Logic Locks",    emoji: "🔐", category: "Logic",     status: "soon", featured: false },
+    { id: "lab-snap",       title: "Lab Snap",       emoji: "🔬", category: "Science",   status: "soon", featured: true },
+    { id: "globe-hopper",   title: "Globe Hopper",   emoji: "🌍", category: "Geography", status: "soon", featured: false },
+    { id: "rhythm-roots",   title: "Rhythm Roots",   emoji: "🎵", category: "Music",     status: "soon", featured: false },
+    { id: "code-critters",  title: "Code Critters",  emoji: "🐛", category: "Coding",    status: "soon", featured: false },
+    { id: "paint-guess",    title: "Paint & Guess",  emoji: "🎨", category: "Art",       status: "soon", featured: false },
+    { id: "time-trek",      title: "Time Trek",      emoji: "⏳", category: "History",   status: "soon", featured: false },
+  ];
+
+  const HUB_CATEGORIES = ["All", "Memory", "Math", "Reading", "Logic", "Science", "Geography", "Music", "Coding", "Art", "History"];
+
   const QUESTS = [
     { id:1, name:"Quest 1", subject:"Animals",   emoji:"🦁",
       levels:["Mammals","Birds","Reptiles","Insects","Fish","Amphibians","Dinosaurs","Farm Animals","Wild Animals","Sea Creatures"] },
@@ -35,6 +53,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const AVATAR_EMOJI = { unicorn:"🦄", dragon:"🐲", robot:"🤖", alien:"👽" };
   const GAME_URL = "retentioo.com";
+  let hubFilter = "All";
+  let hubSearchQuery = "";
+  let quizReturnTo = "hub";
 
   // Mock players for ranked
   const MOCK_PLAYERS = [
@@ -59,7 +80,13 @@ document.addEventListener("DOMContentLoaded", function () {
     unlockedQuests:[1],
     stars:{1:{},2:{},3:{},4:{},5:{}},
     bestStats:{},
-    totalFlips:0, totalSeconds:0
+    totalFlips:0, totalSeconds:0,
+    gateCompleted:false,
+    isGuest:true,
+    matchboxTutorialDone:false,
+    lastGame:null,
+    platformStreak:1,
+    lastStreakDate:null
   };
   let isLoggedIn = false;
 
@@ -84,6 +111,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // ----------------------------------------------------------
   const preloader            = document.getElementById("preloader");
   const loadingBar           = document.querySelector(".loading-bar");
+  const accountGateScreen    = document.getElementById("account-gate-screen");
+  const gamesHubScreen       = document.getElementById("games-hub-screen");
+  const parentDashboardScreen= document.getElementById("parent-dashboard-screen");
+  const comingSoonModal      = document.getElementById("coming-soon-modal");
+  const rankedLockModal      = document.getElementById("ranked-lock-modal");
   const tutorialScreen       = document.getElementById("tutorial-screen");
   const quizScreen           = document.getElementById("quiz-screen");
   const gameModeScreen       = document.getElementById("game-mode-screen");
@@ -99,11 +131,216 @@ document.addEventListener("DOMContentLoaded", function () {
   const winModal             = document.getElementById("win-modal");
 
   function hideAll() {
-    [gameModeScreen,questSelectScreen,mapScreen,gameScreen,
+    [accountGateScreen,gamesHubScreen,parentDashboardScreen,
+     gameModeScreen,questSelectScreen,mapScreen,gameScreen,
      rankedVoteScreen,rankedWaitingScreen,rankedGameScreen,
      rankedResultsScreen,profileScreen,leaderboardScreen].forEach(s=>{
       if(s) s.classList.add("hidden-layer");
     });
+    tutorialScreen.classList.add("hidden-layer");
+    quizScreen.classList.add("hidden-layer");
+  }
+
+  function saveProfile() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(activeProfile));
+  }
+
+  function loadProfile() {
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!raw) return false;
+    const p = JSON.parse(raw);
+    activeProfile = Object.assign({}, activeProfile, p);
+    if (!activeProfile.stars) activeProfile.stars = {1:{},2:{},3:{},4:{},5:{}};
+    if (!activeProfile.unlockedQuests) activeProfile.unlockedQuests = [1];
+    if (!activeProfile.unlockedLevels) activeProfile.unlockedLevels = {1:1,2:1,3:1,4:1,5:1};
+    if (!activeProfile.bestStats) activeProfile.bestStats = {};
+    isLoggedIn = !!activeProfile.isLoggedIn;
+    if (activeProfile.nickname) {
+      activeProfile.gateCompleted = true;
+      if (!activeProfile.matchboxTutorialDone) {
+        const hasProgress = Object.values(activeProfile.stars || {}).some(
+          q => Object.keys(q).length > 0
+        );
+        if (hasProgress) activeProfile.matchboxTutorialDone = true;
+      }
+    }
+    return true;
+  }
+
+  function getMatchboxProgressLabel() {
+    let totalStars = 0;
+    let levelsPlayed = 0;
+    Object.keys(activeProfile.stars || {}).forEach(qid => {
+      const questStars = activeProfile.stars[qid] || {};
+      Object.keys(questStars).forEach(() => { levelsPlayed++; });
+      totalStars += Object.values(questStars).reduce((a, b) => a + b, 0);
+    });
+    if (levelsPlayed === 0) return "New";
+    return `⭐ ${totalStars}`;
+  }
+
+  function updatePlatformStreak() {
+    const today = new Date().toDateString();
+    if (activeProfile.lastStreakDate === today) return;
+    if (!activeProfile.lastStreakDate) {
+      activeProfile.platformStreak = 1;
+    } else {
+      const last = new Date(activeProfile.lastStreakDate);
+      const now = new Date(today);
+      const diffDays = Math.round((now - last) / 86400000);
+      activeProfile.platformStreak = diffDays === 1
+        ? (activeProfile.platformStreak || 1) + 1
+        : 1;
+    }
+    activeProfile.lastStreakDate = today;
+    saveProfile();
+  }
+
+  function updateRankedModeUI() {
+    const rankedBtn = document.getElementById("ranked-mode-btn");
+    const lockBadge = document.getElementById("ranked-lock-badge");
+    if (!rankedBtn) return;
+    if (isLoggedIn) {
+      rankedBtn.classList.remove("ranked-locked");
+      if (lockBadge) lockBadge.classList.add("hidden-layer");
+    } else {
+      rankedBtn.classList.add("ranked-locked");
+      if (lockBadge) lockBadge.classList.remove("hidden-layer");
+    }
+  }
+
+  function renderHub() {
+    updatePlatformStreak();
+    const streakEl = document.getElementById("hub-streak-count");
+    if (streakEl) streakEl.textContent = activeProfile.platformStreak || 1;
+
+    const continueBtn = document.getElementById("continue-game-btn");
+    const continueLabel = document.getElementById("continue-game-label");
+    if (activeProfile.lastGame === "matchbox" && activeProfile.nickname) {
+      continueBtn.classList.remove("hidden-layer");
+      if (continueLabel) continueLabel.textContent = "Matchbox";
+    } else {
+      continueBtn.classList.add("hidden-layer");
+    }
+
+    const filtersEl = document.getElementById("hub-filters");
+    if (filtersEl) {
+      filtersEl.innerHTML = "";
+      HUB_CATEGORIES.forEach(cat => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = `hub-filter-chip ${hubFilter === cat ? "active" : ""}`;
+        chip.textContent = cat;
+        chip.addEventListener("click", () => {
+          hubFilter = cat;
+          renderHub();
+        });
+        filtersEl.appendChild(chip);
+      });
+    }
+
+    const filtered = GAMES.filter(g => {
+      const matchCat = hubFilter === "All" || g.category === hubFilter;
+      const q = hubSearchQuery.trim().toLowerCase();
+      const matchSearch = !q || g.title.toLowerCase().includes(q) || g.category.toLowerCase().includes(q);
+      return matchCat && matchSearch;
+    });
+
+    const featuredEl = document.getElementById("hub-featured-row");
+    if (featuredEl) {
+      featuredEl.innerHTML = "";
+      GAMES.filter(g => g.featured).forEach(g => {
+        featuredEl.appendChild(buildHubTile(g, true));
+      });
+    }
+
+    const gridEl = document.getElementById("hub-games-grid");
+    if (gridEl) {
+      gridEl.innerHTML = "";
+      filtered.forEach(g => gridEl.appendChild(buildHubTile(g, false)));
+    }
+  }
+
+  function buildHubTile(game, isFeatured) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `hub-game-tile ${game.status === "soon" ? "soon-tile" : ""} ${isFeatured ? "featured-tile" : ""}`;
+    const progress = game.id === "matchbox" ? getMatchboxProgressLabel() : "Soon";
+    btn.innerHTML = `
+      <span class="hub-tile-badge ${game.status === "soon" ? "soon-badge" : ""}">${game.status === "live" ? "PLAY" : "SOON"}</span>
+      <span class="hub-tile-emoji">${game.emoji}</span>
+      <span class="hub-tile-title">${game.title}</span>
+      <span class="hub-tile-progress">${progress}</span>
+    `;
+    btn.addEventListener("click", () => {
+      if (game.status === "live") openGame(game.id);
+      else showComingSoonModal(game);
+    });
+    return btn;
+  }
+
+  function showComingSoonModal(game) {
+    document.getElementById("soon-emoji").textContent = game.emoji;
+    document.getElementById("soon-title").textContent = game.title;
+    document.getElementById("soon-category").textContent = game.category;
+    comingSoonModal.classList.add("active");
+  }
+
+  function launchHub() {
+    hideAll();
+    activeProfile.gateCompleted = true;
+    saveProfile();
+    renderHub();
+    gamesHubScreen.classList.remove("hidden-layer");
+  }
+
+  function launchAccountGate() {
+    hideAll();
+    accountGateScreen.classList.remove("hidden-layer");
+  }
+
+  function exitToHub() {
+    stopTimer();
+    saveProfile();
+    launchHub();
+  }
+
+  function openGame(gameId) {
+    if (gameId !== "matchbox") return;
+    activeProfile.lastGame = "matchbox";
+    saveProfile();
+    launchMatchbox();
+  }
+
+  function launchMatchbox() {
+    hideAll();
+    if (!activeProfile.matchboxTutorialDone) {
+      showTutorial();
+      return;
+    }
+    if (!activeProfile.nickname) {
+      quizReturnTo = "matchbox";
+      quizScreen.classList.remove("hidden-layer");
+      return;
+    }
+    launchGameMode();
+  }
+
+  function completeGateSignUp() {
+    activeProfile.isGuest = false;
+    activeProfile.isLoggedIn = true;
+    activeProfile.gateCompleted = true;
+    quizReturnTo = "hub";
+    quizScreen.classList.remove("hidden-layer");
+  }
+
+  function completeGateSkip() {
+    activeProfile.isGuest = true;
+    activeProfile.isLoggedIn = false;
+    activeProfile.gateCompleted = true;
+    saveProfile();
+    launchHub();
   }
 
   // ----------------------------------------------------------
@@ -144,19 +381,68 @@ document.addEventListener("DOMContentLoaded", function () {
       preloader.classList.add("preloader-fade-out");
       setTimeout(()=>{
         preloader.remove();
-        const saved=localStorage.getItem("retentiOo_profile");
-        if(saved){
-          const p=JSON.parse(saved);
-          activeProfile=Object.assign({},activeProfile,p);
-          if(!activeProfile.stars) activeProfile.stars={1:{},2:{},3:{},4:{},5:{}};
-          if(!activeProfile.unlockedQuests) activeProfile.unlockedQuests=[1];
-          if(!activeProfile.unlockedLevels) activeProfile.unlockedLevels={1:1,2:1,3:1,4:1,5:1};
-          if(!activeProfile.bestStats) activeProfile.bestStats={};
-          launchGameMode();
-        } else { showTutorial(); }
+        if (loadProfile() && activeProfile.gateCompleted) {
+          launchHub();
+        } else {
+          launchAccountGate();
+        }
       },500);
     },LOAD_DURATION+50);
   }
+
+  document.getElementById("gate-signup-btn").addEventListener("click", () => {
+    accountGateScreen.classList.add("hidden-layer");
+    completeGateSignUp();
+  });
+
+  document.getElementById("gate-skip-btn").addEventListener("click", completeGateSkip);
+
+  document.getElementById("hub-search").addEventListener("input", (e) => {
+    hubSearchQuery = e.target.value;
+    renderHub();
+  });
+
+  document.getElementById("continue-game-btn").addEventListener("click", () => {
+    if (activeProfile.lastGame === "matchbox") launchMatchbox();
+  });
+
+  document.getElementById("hub-profile-btn").addEventListener("click", () => {
+    if (activeProfile.nickname) launchProfileScreen();
+    else completeGateSignUp();
+  });
+
+  document.getElementById("hub-parent-btn").addEventListener("click", () => {
+    hideAll();
+    parentDashboardScreen.classList.remove("hidden-layer");
+  });
+
+  document.getElementById("back-from-parent").addEventListener("click", launchHub);
+
+  document.getElementById("close-soon-btn").addEventListener("click", () => {
+    comingSoonModal.classList.remove("active");
+  });
+  document.getElementById("soon-ok-btn").addEventListener("click", () => {
+    comingSoonModal.classList.remove("active");
+  });
+  if (comingSoonModal) {
+    comingSoonModal.addEventListener("click", (e) => {
+      if (e.target === comingSoonModal) comingSoonModal.classList.remove("active");
+    });
+  }
+
+  document.getElementById("close-ranked-lock-btn").addEventListener("click", () => {
+    rankedLockModal.classList.remove("active");
+  });
+  document.getElementById("ranked-lock-cancel-btn").addEventListener("click", () => {
+    rankedLockModal.classList.remove("active");
+  });
+  document.getElementById("ranked-lock-signup-btn").addEventListener("click", () => {
+    rankedLockModal.classList.remove("active");
+    accountGateScreen.classList.add("hidden-layer");
+    completeGateSignUp();
+  });
+
+  document.getElementById("back-to-hub-from-matchbox").addEventListener("click", exitToHub);
 
   // ----------------------------------------------------------
   //  PHASE 2 — TUTORIAL
@@ -239,16 +525,32 @@ document.addEventListener("DOMContentLoaded", function () {
     },1000);
   }
 
-  document.getElementById("t-next-3").addEventListener("click",()=>{
-    clearInterval(step3Timer);
+  function finishMatchboxTutorial() {
+    activeProfile.matchboxTutorialDone = true;
+    saveProfile();
     tutorialScreen.classList.add("hidden-layer");
-    quizScreen.classList.remove("hidden-layer");
+    if (!activeProfile.nickname) {
+      quizScreen.classList.remove("hidden-layer");
+    } else {
+      launchGameMode();
+    }
+  }
+
+  document.getElementById("t-next-3").addEventListener("click", () => {
+    clearInterval(step3Timer);
+    finishMatchboxTutorial();
   });
 
-  document.getElementById("tutorial-skip").addEventListener("click",()=>{
+  document.getElementById("tutorial-skip").addEventListener("click", () => {
     clearInterval(step3Timer);
+    activeProfile.matchboxTutorialDone = true;
+    saveProfile();
     tutorialScreen.classList.add("hidden-layer");
-    quizScreen.classList.remove("hidden-layer");
+    if (!activeProfile.nickname) {
+      quizScreen.classList.remove("hidden-layer");
+    } else {
+      launchGameMode();
+    }
   });
 
   // ----------------------------------------------------------
@@ -262,9 +564,14 @@ document.addEventListener("DOMContentLoaded", function () {
       errorEl.classList.add("hidden-layer");
       activeProfile.nickname=nickname;
       activeProfile.avatar=this.dataset.avatar;
-      localStorage.setItem("retentiOo_profile",JSON.stringify(activeProfile));
+      if (!activeProfile.isLoggedIn && !activeProfile.isGuest) {
+        activeProfile.isLoggedIn = true;
+        activeProfile.isGuest = false;
+      }
+      saveProfile();
       quizScreen.classList.add("hidden-layer");
-      launchGameMode();
+      if (quizReturnTo === "matchbox") launchGameMode();
+      else launchHub();
     });
   });
 
@@ -278,7 +585,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("gm-avatar").textContent=avatar;
     document.getElementById("gm-playername").textContent=nickname;
     const authBtn=document.getElementById("auth-btn");
-    if(authBtn&&isLoggedIn) authBtn.textContent=nickname;
+    if(authBtn) authBtn.textContent=isLoggedIn?nickname:"Sign Up";
+    updateRankedModeUI();
     gameModeScreen.classList.remove("hidden-layer");
   }
 
@@ -288,6 +596,10 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   document.getElementById("ranked-mode-btn").addEventListener("click",()=>{
+    if (!isLoggedIn) {
+      rankedLockModal.classList.add("active");
+      return;
+    }
     gameModeScreen.classList.add("hidden-layer");
     launchRankedVote();
   });
@@ -332,6 +644,12 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("back-to-game-mode").addEventListener("click",()=>{
     questSelectScreen.classList.add("hidden-layer");
     launchGameMode();
+  });
+
+  document.getElementById("nav-hub-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    gameScreen.classList.add("hidden-layer");
+    exitToHub();
   });
 
   // ----------------------------------------------------------
@@ -762,7 +1080,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("back-to-mode-btn").addEventListener("click",()=>{
     rankedResultsScreen.classList.add("hidden-layer");
-    launchGameMode();
+    exitToHub();
   });
 
   // ----------------------------------------------------------
@@ -779,7 +1097,7 @@ document.addEventListener("DOMContentLoaded", function () {
       canvas.toBlob(async(blob)=>{
         const file=new File([blob],"retentioo-result.png",{type:"image/png"});
         if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-          await navigator.share({ files:[file], title:"retentiOo", text });
+          await navigator.share({ files:[file], title:"retentiOoo", text });
         } else {
           // Desktop fallback — download image + copy text
           const url=URL.createObjectURL(blob);
@@ -799,7 +1117,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("share-arcade-btn").addEventListener("click",()=>{
     const topic=document.getElementById("win-quest-label").textContent;
     const stars=["win-star-1","win-star-2","win-star-3"].filter(id=>document.getElementById(id).textContent==="⭐").length;
-    const text=`I just completed "${topic}" with ${document.getElementById("win-flips").textContent} flips in ${document.getElementById("win-time").textContent}! ${renderStarString(stars)}\nPlay at ${GAME_URL}`;
+    const text=`I just completed "${topic}" on Matchbox (retentiOoo) with ${document.getElementById("win-flips").textContent} flips in ${document.getElementById("win-time").textContent}! ${renderStarString(stars)}\nPlay at ${GAME_URL}`;
     // Sync share card content
     document.getElementById("ac-topic").textContent=topic;
     document.getElementById("ac-stars").textContent=renderStarString(stars);
@@ -813,7 +1131,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const flips=document.getElementById("rs-flips").textContent;
     const time=document.getElementById("rs-time").textContent;
     const topic=document.getElementById("rs-topic").textContent;
-    const text=`I ranked ${rank} of 10 in a Ranked match on retentiOo!\nTopic: ${topic} | ${flips} flips | ${time}\nPlay at ${GAME_URL}`;
+    const text=`I ranked ${rank} of 10 in a Ranked Matchbox match on retentiOoo!\nTopic: ${topic} | ${flips} flips | ${time}\nPlay at ${GAME_URL}`;
     shareCard("ranked-share-card",text);
   });
 
@@ -854,7 +1172,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    localStorage.setItem("retentiOo_profile",JSON.stringify(activeProfile));
+    saveProfile();
 
     document.getElementById("win-title").textContent=`Level ${level} Complete!`;
     document.getElementById("win-quest-label").textContent=`${quest.subject} ${quest.emoji} — ${subTopic}`;
@@ -950,7 +1268,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("back-from-profile").addEventListener("click",()=>{
     profileScreen.classList.add("hidden-layer");
-    launchGameMode();
+    launchHub();
   });
 
   // ----------------------------------------------------------
@@ -993,7 +1311,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("back-from-leaderboard").addEventListener("click",()=>{
     leaderboardScreen.classList.add("hidden-layer");
-    launchGameMode();
+    if (gameScreen.classList.contains("hidden-layer")) launchHub();
+    else launchGameMode();
   });
 
   document.getElementById("leaderboard-link").addEventListener("click",e=>{
@@ -1014,6 +1333,10 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("nav-ranked-link").addEventListener("click",e=>{
     e.preventDefault();
     gameScreen.classList.add("hidden-layer");
+    if (!isLoggedIn) {
+      rankedLockModal.classList.add("active");
+      return;
+    }
     launchRankedVote();
   });
 
@@ -1087,7 +1410,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const usernameInput=document.getElementById("auth-username");
       if(isSignUpMode){
         modalTitle.textContent="Create Account";
-        modalSubtitle.textContent="Join retentiOo to save your high scores!";
+        modalSubtitle.textContent="Join retentiOoo to save your high scores!";
         submitAuthBtn.textContent="Sign Up"; switchMode.textContent="Log In";
         usernameWrapper.style.display="flex";
         if(usernameInput) usernameInput.required=true;
@@ -1106,6 +1429,11 @@ document.addEventListener("DOMContentLoaded", function () {
       e.preventDefault();
       const username=document.getElementById("auth-username").value;
       isLoggedIn=true;
+      activeProfile.isLoggedIn=true;
+      activeProfile.isGuest=false;
+      if(username) activeProfile.nickname=username;
+      saveProfile();
+      updateRankedModeUI();
       if(authBtn) authBtn.textContent=username||activeProfile.nickname||"Account";
       authModal.classList.remove("active");
       authForm.reset();

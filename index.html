@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
-  <title>retentiOo</title>
+  <title>retentiOoo — Play to remember</title>
   <link rel="stylesheet" href="style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
@@ -15,10 +15,100 @@
   <div id="preloader">
     <div class="loader-container">
       <h1 class="loading-logo">
-        <span>r</span><span>e</span><span>t</span><span>e</span><span>n</span><span>t</span><span>i</span><span>O</span><span>o</span>
+        <span>r</span><span>e</span><span>t</span><span>e</span><span>n</span><span>t</span><span>i</span><span>O</span><span>o</span><span>o</span>
       </h1>
+      <p class="preloader-tagline">Play to remember</p>
       <div class="loading-bar-container"><div class="loading-bar"></div></div>
-      <p class="preloader-definition">Retentio — Latin for a retaining, holding back, or withholding. The root of the word <em>retention</em>.</p>
+    </div>
+  </div>
+
+  <!-- ACCOUNT GATE (Sign up / Skip — mock auth) -->
+  <div id="account-gate-screen" class="hidden-layer">
+    <div class="gate-inner">
+      <h1 class="gate-logo">retenti<span class="gate-o">O</span><span class="gate-o">o</span><span class="gate-o">o</span></h1>
+      <p class="gate-tagline">Play to remember</p>
+      <p class="gate-sub">Edutech games for curious minds. Sign up to save everywhere and unlock Ranked.</p>
+      <button type="button" id="gate-signup-btn" class="gate-btn gate-btn-primary">Sign Up</button>
+      <button type="button" id="gate-skip-btn" class="gate-btn gate-btn-secondary">Skip for now</button>
+      <p class="gate-hint">Skipping? Progress stays on this device. Arcade only until you sign up.</p>
+    </div>
+  </div>
+
+  <!-- GAMES HUB -->
+  <div id="games-hub-screen" class="hidden-layer">
+    <div class="hub-inner">
+      <header class="hub-top">
+        <div class="hub-brand-block">
+          <h1 class="hub-logo">retentiOoo</h1>
+          <p class="hub-tagline">Play to remember</p>
+        </div>
+        <div class="hub-top-actions">
+          <span class="hub-streak-pill" title="Platform streak">🔥 <span id="hub-streak-count">1</span></span>
+          <button type="button" class="hub-icon-btn" id="hub-profile-btn" title="Profile">👤</button>
+        </div>
+      </header>
+
+      <button type="button" id="continue-game-btn" class="continue-game-btn hidden-layer">▶️ Continue <span id="continue-game-label">Matchbox</span></button>
+
+      <div class="hub-search-wrap">
+        <span class="hub-search-icon">🔍</span>
+        <input type="search" id="hub-search" class="hub-search-input" placeholder="Search games…" autocomplete="off">
+      </div>
+
+      <div class="hub-filters" id="hub-filters" role="tablist" aria-label="Game categories"></div>
+
+      <section class="hub-section">
+        <h2 class="hub-section-title">⭐ Featured</h2>
+        <div class="hub-featured-row" id="hub-featured-row"></div>
+      </section>
+
+      <section class="hub-section">
+        <h2 class="hub-section-title">All Games</h2>
+        <div class="hub-games-grid" id="hub-games-grid"></div>
+      </section>
+
+      <footer class="hub-footer">
+        <a href="upload.html" class="hub-footer-link">📢 Place an Ad</a>
+        <button type="button" class="hub-footer-link hub-footer-btn" id="hub-parent-btn">👪 Parent Dashboard</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- COMING SOON (hub) -->
+  <div id="coming-soon-modal" class="modal-overlay">
+    <div class="modal-card soon-modal-card">
+      <button type="button" id="close-soon-btn" class="close-btn" aria-label="Close">&times;</button>
+      <div class="soon-emoji" id="soon-emoji">🍕</div>
+      <h2 id="soon-title">Fraction Pizza</h2>
+      <p class="soon-category" id="soon-category">Math</p>
+      <p class="soon-message">Coming soon! We're building this game for retentiOoo.</p>
+      <button type="button" class="action-btn" id="soon-ok-btn">Got it!</button>
+    </div>
+  </div>
+
+  <!-- RANKED LOCK (guests) -->
+  <div id="ranked-lock-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button type="button" id="close-ranked-lock-btn" class="close-btn" aria-label="Close">&times;</button>
+      <h2>🏆 Ranked is locked</h2>
+      <p class="modal-subtitle">Sign up to compete in Ranked matches and climb the leaderboard.</p>
+      <button type="button" class="action-btn" id="ranked-lock-signup-btn">Sign Up</button>
+      <button type="button" class="win-btn win-btn-secondary" id="ranked-lock-cancel-btn">Maybe later</button>
+    </div>
+  </div>
+
+  <!-- PARENT DASHBOARD (placeholder) -->
+  <div id="parent-dashboard-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button type="button" class="back-btn" id="back-from-parent">← Games</button>
+        <h2 class="panel-title">Parent Dashboard</h2>
+      </div>
+      <div class="parent-placeholder">
+        <span class="parent-placeholder-icon">👪</span>
+        <p>Parents will soon see progress, play time, and safety settings here.</p>
+        <p class="parent-placeholder-note">Prototype preview — connect a real account later.</p>
+      </div>
     </div>
   </div>
 
@@ -106,34 +196,34 @@
     </div>
   </div>
 
-  <!-- GAME MODE SCREEN -->
+  <!-- MATCHBOX: MODE SCREEN -->
   <div id="game-mode-screen" class="hidden-layer">
     <div class="game-mode-inner">
       <div class="map-header">
+        <button type="button" class="back-btn" id="back-to-hub-from-matchbox">← All Games</button>
         <div class="player-badge"><span id="gm-avatar">🦄</span> <span id="gm-playername">Player</span></div>
-        <div class="map-stats">🔥 <span id="gm-streak">1</span> Day Streak</div>
       </div>
-      <h2 class="map-title">Game Mode</h2>
-      <p class="game-mode-subtitle">How do you want to play?</p>
+      <h2 class="map-title">🃏 Matchbox</h2>
+      <p class="game-mode-subtitle">Flip. Match. Remember.</p>
+      <p class="game-mode-subtitle game-mode-sub-small">How do you want to play?</p>
 
       <div class="game-mode-cards">
-        <!-- Adventure -->
-        <button class="game-mode-card" id="adventure-mode-btn">
-          <span class="gm-emoji">🗺️</span>
+        <button type="button" class="game-mode-card" id="adventure-mode-btn">
+          <span class="gm-emoji">🎮</span>
           <div class="gm-info">
-            <span class="gm-title">Adventure</span>
+            <span class="gm-title">Arcade</span>
             <span class="gm-desc">5 Quests · 10 Levels each · Learn at your own pace</span>
           </div>
           <span class="gm-arrow">▶️</span>
         </button>
-        <!-- Ranked -->
-        <button class="game-mode-card game-mode-ranked" id="ranked-mode-btn">
+        <button type="button" class="game-mode-card game-mode-ranked" id="ranked-mode-btn">
           <span class="gm-emoji">🏆</span>
           <div class="gm-info">
             <span class="gm-title">Ranked</span>
-            <span class="gm-desc">16 cards · 2 min · Compete with players globally</span>
+            <span class="gm-desc" id="ranked-mode-desc">16 cards · 2 min · Compete globally</span>
           </div>
-          <span class="gm-arrow">▶️</span>
+          <span class="gm-arrow" id="ranked-mode-arrow">▶️</span>
+          <span class="gm-lock-badge hidden-layer" id="ranked-lock-badge">🔒 Sign up</span>
         </button>
       </div>
     </div>
@@ -196,7 +286,7 @@
   <!-- RANKED: GAME SCREEN -->
   <div id="ranked-game-screen" class="hidden-layer">
     <nav class="game-navbar">
-      <div class="nav-logo"><a href="#" id="ranked-logo">retentiOo</a></div>
+      <div class="nav-logo"><a href="#" id="ranked-logo">retentiOoo</a></div>
       <div class="ranked-hud">
         <div class="ranked-hud-stat">
           <span class="ranked-hud-label">⏱ Time Left</span>
@@ -268,12 +358,13 @@
   <!-- ADVENTURE GAME SCREEN -->
   <div id="game-screen" class="hidden-layer">
     <nav class="game-navbar">
-      <div class="nav-logo"><a href="#" id="nav-logo-link">retentiOo</a></div>
+      <div class="nav-logo"><a href="#" id="nav-logo-link">retentiOoo</a></div>
       <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
         <span class="hamburger"></span>
       </button>
       <ul class="nav-links" id="nav-links">
-        <li><a href="#" id="nav-adventure-link">🗺️ Adventure</a></li>
+        <li><a href="#" id="nav-hub-link">🏠 All Games</a></li>
+        <li><a href="#" id="nav-adventure-link">🎮 Arcade</a></li>
         <li><a href="#" id="nav-ranked-link">🏆 Ranked</a></li>
         <li><a href="#" id="leaderboard-link">Leaderboard</a></li>
         <li><button id="auth-btn">Sign Up</button></li>
@@ -364,7 +455,7 @@
       <!-- Share card captured by html2canvas -->
       <div class="share-card arcade-share-card" id="arcade-share-card">
         <div class="share-card-logo">retentiO<span>o</span></div>
-        <div class="share-card-mode">🗺️ Adventure</div>
+        <div class="share-card-mode">🎮 Matchbox · Arcade</div>
         <div class="share-card-topic" id="ac-topic">Animals 🦁 — Mammals</div>
         <div class="share-card-stars" id="ac-stars">⭐⭐⭐</div>
         <div class="share-card-stats">
@@ -405,7 +496,7 @@
     <div class="modal-card">
       <button id="close-modal-btn" class="close-btn">&times;</button>
       <h2 id="modal-title">Create Account</h2>
-      <p id="modal-subtitle">Join retentiOo &amp; Dominate the Leaderboard!</p>
+      <p id="modal-subtitle">Join retentiOoo &amp; dominate the leaderboard!</p>
       <form id="auth-form">
         <div class="input-group" id="username-wrapper">
           <label for="auth-username">Username</label>
