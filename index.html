@@ -7,44 +7,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-  <!-- ============================================================
-       LAYER 1: PRELOADER
-  ============================================================ -->
+  <!-- PRELOADER -->
   <div id="preloader">
     <div class="loader-container">
       <h1 class="loading-logo">
         <span>r</span><span>e</span><span>t</span><span>e</span><span>n</span><span>t</span><span>i</span><span>O</span><span>o</span>
       </h1>
-      <div class="loading-bar-container">
-        <div class="loading-bar"></div>
-      </div>
+      <div class="loading-bar-container"><div class="loading-bar"></div></div>
       <p class="preloader-definition">Retentio — Latin for a retaining, holding back, or withholding. The root of the word <em>retention</em>.</p>
     </div>
   </div>
 
-  <!-- ============================================================
-       LAYER 2: TUTORIAL (new players only)
-  ============================================================ -->
+  <!-- TUTORIAL -->
   <div id="tutorial-screen" class="hidden-layer">
-
-    <!-- Skip button always visible -->
     <button id="tutorial-skip" class="tutorial-skip-btn">Skip Tutorial</button>
-
-    <!-- Progress dots -->
     <div class="tutorial-progress">
       <span class="t-dot active" id="t-dot-1"></span>
       <span class="t-dot" id="t-dot-2"></span>
       <span class="t-dot" id="t-dot-3"></span>
     </div>
-
-    <!-- STEP 1: Learn to Flip -->
+    <!-- Step 1 -->
     <div class="tutorial-step" id="t-step-1">
       <h2 class="tutorial-title">Learn to Flip!</h2>
       <p class="tutorial-text">Tap any card to reveal the hidden image.</p>
-
       <div class="tutorial-stage">
         <div class="t-finger" id="t-finger">👆</div>
         <div class="t-card" id="t-card-flip">
@@ -54,31 +43,25 @@
           </div>
         </div>
       </div>
-
       <button class="tutorial-next-btn" id="t-next-1" disabled>Next →</button>
     </div>
-
-    <!-- STEP 2: Find the Match -->
+    <!-- Step 2 -->
     <div class="tutorial-step hidden-layer" id="t-step-2">
       <h2 class="tutorial-title">Find the Match!</h2>
       <p class="tutorial-text">Tap another card to find its match. Remember its position if you miss!</p>
-
       <div class="tutorial-stage">
-        <!-- Already flipped card -->
         <div class="t-card t-card-flipped">
           <div class="t-card-inner">
             <div class="t-card-front"><span class="material-icons">question_mark</span></div>
             <div class="t-card-back">🦁</div>
           </div>
         </div>
-        <!-- Wrong card -->
         <div class="t-card" id="t-card-wrong">
           <div class="t-card-inner">
             <div class="t-card-front"><span class="material-icons">question_mark</span></div>
             <div class="t-card-back">🚀</div>
           </div>
         </div>
-        <!-- Correct card -->
         <div class="t-card" id="t-card-correct">
           <div class="t-card-inner">
             <div class="t-card-front"><span class="material-icons">question_mark</span></div>
@@ -86,50 +69,33 @@
           </div>
         </div>
       </div>
-
       <p class="tutorial-hint" id="t-hint-2">Tap one of the face-down cards!</p>
       <button class="tutorial-next-btn" id="t-next-2" disabled>Next →</button>
     </div>
-
-    <!-- STEP 3: Beat the Clock -->
+    <!-- Step 3 -->
     <div class="tutorial-step hidden-layer" id="t-step-3">
       <h2 class="tutorial-title">Beat the Clock!</h2>
       <p class="tutorial-text">Clear all pairs quickly! Fewer flips and faster times rank you higher.</p>
-
       <div class="tutorial-stage t-stage-hud">
         <div class="t-hud">
-          <div class="t-hud-stat">
-            <span class="t-hud-icon">🕒</span>
-            <span class="t-hud-val" id="t-timer">0:00</span>
-          </div>
-          <div class="t-hud-stat">
-            <span class="t-hud-icon">🔄</span>
-            <span class="t-hud-val" id="t-flips">0 Flips</span>
-          </div>
+          <div class="t-hud-stat"><span class="t-hud-icon">🕒</span><span class="t-hud-val" id="t-timer">0:00</span></div>
+          <div class="t-hud-stat"><span class="t-hud-icon">🔄</span><span class="t-hud-val" id="t-flips">0 Flips</span></div>
         </div>
-        <div class="t-perfect-badge hidden-layer" id="t-perfect-badge">
-          ⭐⭐⭐ Perfect Score!
-        </div>
+        <div class="t-perfect-badge hidden-layer" id="t-perfect-badge">⭐⭐⭐ Perfect Score!</div>
       </div>
-
       <button class="tutorial-next-btn tutorial-start-btn" id="t-next-3">🚀 Start Playing!</button>
     </div>
+  </div>
 
-  </div><!-- end tutorial -->
-
-  <!-- ============================================================
-       LAYER 3: ONBOARDING — Nickname + Avatar
-  ============================================================ -->
+  <!-- QUIZ: Nickname + Avatar -->
   <div id="quiz-screen" class="hidden-layer">
     <div class="quiz-container">
       <h2>Create Your Player!</h2>
-
       <div class="input-group quiz-nickname-group">
         <label for="quiz-nickname">Your Nickname</label>
         <input type="text" id="quiz-nickname" placeholder="e.g. SuperBrain" maxlength="20" autocomplete="off">
         <span class="nickname-error hidden-layer" id="nickname-error">Please enter a nickname!</span>
       </div>
-
       <p class="quiz-avatar-label">Pick Your Avatar</p>
       <div class="kid-grid">
         <button class="kid-card avatar-card" data-avatar="unicorn">🦄</button>
@@ -140,23 +106,52 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       LAYER 4: QUEST SELECT
-  ============================================================ -->
+  <!-- GAME MODE SCREEN -->
+  <div id="game-mode-screen" class="hidden-layer">
+    <div class="game-mode-inner">
+      <div class="map-header">
+        <div class="player-badge"><span id="gm-avatar">🦄</span> <span id="gm-playername">Player</span></div>
+        <div class="map-stats">🔥 <span id="gm-streak">1</span> Day Streak</div>
+      </div>
+      <h2 class="map-title">Game Mode</h2>
+      <p class="game-mode-subtitle">How do you want to play?</p>
+
+      <div class="game-mode-cards">
+        <!-- Adventure -->
+        <button class="game-mode-card" id="adventure-mode-btn">
+          <span class="gm-emoji">🗺️</span>
+          <div class="gm-info">
+            <span class="gm-title">Adventure</span>
+            <span class="gm-desc">5 Quests · 10 Levels each · Learn at your own pace</span>
+          </div>
+          <span class="gm-arrow">▶️</span>
+        </button>
+        <!-- Ranked -->
+        <button class="game-mode-card game-mode-ranked" id="ranked-mode-btn">
+          <span class="gm-emoji">🏆</span>
+          <div class="gm-info">
+            <span class="gm-title">Ranked</span>
+            <span class="gm-desc">16 cards · 2 min · Compete with players globally</span>
+          </div>
+          <span class="gm-arrow">▶️</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUEST SELECT -->
   <div id="quest-select-screen" class="hidden-layer">
     <div class="quest-select-inner">
       <div class="map-header">
+        <button class="back-btn" id="back-to-game-mode">← Back</button>
         <div class="player-badge"><span id="qs-avatar">🦄</span> <span id="qs-playername">Player</span></div>
-        <div class="map-stats">🔥 <span id="qs-streak">1</span> Day Streak</div>
       </div>
       <h2 class="map-title">Choose Your Quest!</h2>
       <div class="quest-list" id="quest-list"></div>
     </div>
   </div>
 
-  <!-- ============================================================
-       LAYER 5: QUEST MAP
-  ============================================================ -->
+  <!-- QUEST MAP -->
   <div id="map-screen" class="hidden-layer">
     <div class="map-inner">
       <div class="map-header">
@@ -170,20 +165,116 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       LAYER 6: MAIN GAME
-  ============================================================ -->
-  <div id="game-screen" class="hidden-layer">
-
-    <nav class="game-navbar">
-      <div class="nav-logo">
-        <a href="#" id="nav-logo-link">retentiOo</a>
+  <!-- RANKED: VOTE SCREEN -->
+  <div id="ranked-vote-screen" class="hidden-layer">
+    <div class="ranked-inner">
+      <div class="map-header">
+        <button class="back-btn" id="back-from-vote">← Back</button>
+        <div class="player-badge"><span id="rv-avatar">🦄</span> <span id="rv-name">Player</span></div>
       </div>
+      <h2 class="map-title">Vote for a Topic!</h2>
+      <p class="ranked-subtitle">The most voted topic will be played by all 10 players.</p>
+      <div class="vote-grid" id="vote-grid"></div>
+      <div class="vote-results" id="vote-results"></div>
+      <button class="ranked-action-btn hidden-layer" id="vote-confirm-btn">Confirm Vote ✓</button>
+    </div>
+  </div>
+
+  <!-- RANKED: WAITING ROOM -->
+  <div id="ranked-waiting-screen" class="hidden-layer">
+    <div class="ranked-inner">
+      <h2 class="map-title">⚔️ Ranked Match</h2>
+      <p class="ranked-subtitle" id="ranked-topic-label">Topic: Animals 🦁</p>
+      <div class="waiting-room" id="waiting-room"></div>
+      <div class="waiting-countdown" id="waiting-countdown">
+        <p>Match starts in</p>
+        <span id="waiting-timer">5</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKED: GAME SCREEN -->
+  <div id="ranked-game-screen" class="hidden-layer">
+    <nav class="game-navbar">
+      <div class="nav-logo"><a href="#" id="ranked-logo">retentiOo</a></div>
+      <div class="ranked-hud">
+        <div class="ranked-hud-stat">
+          <span class="ranked-hud-label">⏱ Time Left</span>
+          <span class="ranked-hud-val" id="ranked-timer">2:00</span>
+        </div>
+        <div class="ranked-hud-stat">
+          <span class="ranked-hud-label">🔄 Flips</span>
+          <span class="ranked-hud-val" id="ranked-flips">0</span>
+        </div>
+        <div class="ranked-hud-stat">
+          <span class="ranked-hud-label">📌 Topic</span>
+          <span class="ranked-hud-val" id="ranked-topic-hud">-</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="ranked-layout">
+      <!-- Live players panel -->
+      <div class="live-players-panel" id="live-players-panel"></div>
+      <!-- Game board -->
+      <div class="wrapper ranked-wrapper">
+        <ul class="cards" id="ranked-cards"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKED RESULTS SCREEN -->
+  <div id="ranked-results-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <h2 class="panel-title">⚔️ Match Results</h2>
+      </div>
+
+      <!-- Share card (this gets captured by html2canvas) -->
+      <div class="share-card ranked-share-card" id="ranked-share-card">
+        <div class="share-card-logo">retentiO<span>o</span></div>
+        <div class="share-card-mode">⚔️ Ranked Match</div>
+        <div class="share-card-topic" id="rs-topic">Animals 🦁</div>
+        <div class="share-card-rank" id="rs-rank">#1</div>
+        <div class="share-card-rank-label">of 10 players</div>
+        <div class="share-card-stats">
+          <div class="share-stat">
+            <span class="share-stat-label">Flips</span>
+            <span class="share-stat-val" id="rs-flips">0</span>
+          </div>
+          <div class="share-stat">
+            <span class="share-stat-label">Time</span>
+            <span class="share-stat-val" id="rs-time">0:00</span>
+          </div>
+          <div class="share-stat">
+            <span class="share-stat-label">Score</span>
+            <span class="share-stat-val" id="rs-score">0</span>
+          </div>
+        </div>
+        <div class="share-card-url">retentioo.com</div>
+      </div>
+
+      <!-- Full results list -->
+      <div class="ranked-results-list" id="ranked-results-list"></div>
+
+      <div class="ranked-result-btns">
+        <button class="win-btn win-btn-primary" id="share-ranked-btn">📤 Share Result</button>
+        <button class="win-btn win-btn-secondary" id="play-again-ranked-btn">Play Again ▶️</button>
+        <button class="win-btn win-btn-secondary" id="back-to-mode-btn">← Game Mode</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADVENTURE GAME SCREEN -->
+  <div id="game-screen" class="hidden-layer">
+    <nav class="game-navbar">
+      <div class="nav-logo"><a href="#" id="nav-logo-link">retentiOo</a></div>
       <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
         <span class="hamburger"></span>
       </button>
       <ul class="nav-links" id="nav-links">
-        <li><a href="#how-to-play">How to Play</a></li>
+        <li><a href="#" id="nav-adventure-link">🗺️ Adventure</a></li>
+        <li><a href="#" id="nav-ranked-link">🏆 Ranked</a></li>
         <li><a href="#" id="leaderboard-link">Leaderboard</a></li>
         <li><button id="auth-btn">Sign Up</button></li>
       </ul>
@@ -191,22 +282,10 @@
 
     <div class="wrapper">
       <div class="stats-container">
-        <div class="stat">
-          <span class="stat-label">Quest</span>
-          <span class="stat-value" id="current-subject-label">-</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Level</span>
-          <span class="stat-value" id="current-level-label">1</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Time</span>
-          <span class="stat-value" id="timer">0:00</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Flips</span>
-          <span class="stat-value" id="flips">0</span>
-        </div>
+        <div class="stat"><span class="stat-label">Quest</span><span class="stat-value" id="current-subject-label">-</span></div>
+        <div class="stat"><span class="stat-label">Level</span><span class="stat-value" id="current-level-label">1</span></div>
+        <div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timer">0:00</span></div>
+        <div class="stat"><span class="stat-label">Flips</span><span class="stat-value" id="flips">0</span></div>
       </div>
       <ul class="cards" id="game-cards"></ul>
     </div>
@@ -218,9 +297,7 @@
       <p class="ad-label">To place your Ad</p>
       <a href="https://wa.me/2348000000000" class="ad-cta" target="_blank" rel="noopener noreferrer">
         <span class="ad-text">Contact</span>
-        <span class="brand-circle">
-          <img src="images/logo.png" alt="retentiOo logo" class="circle-img">
-        </span>
+        <span class="brand-circle"><img src="images/logo.png" alt="retentiOo logo" class="circle-img"></span>
       </a>
     </div>
 
@@ -230,108 +307,100 @@
         <li><strong>Flip a Card:</strong> Click any face-down card to reveal the hidden image.</li>
         <li><strong>Find its Match:</strong> Click a second card to flip it over.</li>
         <li><strong>It's a Match!</strong> Matched cards stay face-up.</li>
-        <li><strong>Not a Match?</strong> Both cards flip back face-down. Memorize their positions!</li>
+        <li><strong>Not a Match?</strong> Both cards flip back. Memorize their positions!</li>
         <li><strong>Win the Game:</strong> Match all pairs to complete the level.</li>
       </ol>
     </div>
-
   </div>
 
-  <!-- ============================================================
-       PROFILE SCREEN
-  ============================================================ -->
+  <!-- PROFILE SCREEN -->
   <div id="profile-screen" class="hidden-layer fullscreen-panel">
     <div class="panel-inner">
       <div class="panel-header">
         <button class="back-btn" id="back-from-profile">← Back</button>
         <h2 class="panel-title">My Profile</h2>
       </div>
-
       <div class="profile-hero">
         <div class="profile-avatar" id="profile-avatar">🦄</div>
         <div class="profile-name" id="profile-name">Player</div>
         <div class="profile-badge" id="profile-badge">Quest 1 · Level 1</div>
         <div class="profile-rank-badge" id="profile-rank-badge">🏆 Global Rank #—</div>
       </div>
-
       <div class="profile-section">
         <h3 class="section-title">My Progress</h3>
         <div class="progress-cards" id="progress-cards"></div>
       </div>
-
       <div class="profile-section">
         <h3 class="section-title">Best Stats Per Subject</h3>
-        <!-- Table header -->
         <div class="stats-table-header">
-          <span>Subject</span>
-          <span>Best Flips</span>
-          <span>Best Time</span>
+          <span>Subject</span><span>Best Flips</span><span>Best Time</span>
         </div>
         <div class="stats-table" id="stats-table"></div>
       </div>
     </div>
   </div>
 
-  <!-- ============================================================
-       LEADERBOARD SCREEN
-  ============================================================ -->
+  <!-- LEADERBOARD SCREEN -->
   <div id="leaderboard-screen" class="hidden-layer fullscreen-panel">
     <div class="panel-inner">
       <div class="panel-header">
         <button class="back-btn" id="back-from-leaderboard">← Back</button>
         <h2 class="panel-title">Leaderboard</h2>
       </div>
-
-      <!-- Global leaderboard header -->
       <div class="lb-global-header">
         <span class="lb-col-head">Rank</span>
         <span class="lb-col-head">Player</span>
-        <span class="lb-col-head">⭐ Stars</span>
         <span class="lb-col-head">🔄 Flips</span>
         <span class="lb-col-head">🕒 Time</span>
       </div>
-
       <div class="leaderboard-list" id="leaderboard-list"></div>
       <p class="leaderboard-note">🔒 Log in to appear on the global leaderboard.</p>
     </div>
   </div>
 
-  <!-- ============================================================
-       WIN MODAL
-  ============================================================ -->
+  <!-- WIN MODAL (Adventure) -->
   <div id="win-modal" class="modal-overlay">
     <div class="modal-card win-card">
+      <!-- Share card captured by html2canvas -->
+      <div class="share-card arcade-share-card" id="arcade-share-card">
+        <div class="share-card-logo">retentiO<span>o</span></div>
+        <div class="share-card-mode">🗺️ Adventure</div>
+        <div class="share-card-topic" id="ac-topic">Animals 🦁 — Mammals</div>
+        <div class="share-card-stars" id="ac-stars">⭐⭐⭐</div>
+        <div class="share-card-stats">
+          <div class="share-stat">
+            <span class="share-stat-label">Flips</span>
+            <span class="share-stat-val" id="ac-flips">0</span>
+          </div>
+          <div class="share-stat">
+            <span class="share-stat-label">Time</span>
+            <span class="share-stat-val" id="ac-time">0:00</span>
+          </div>
+        </div>
+        <div class="share-card-url">retentioo.com</div>
+      </div>
+
       <h2 id="win-title">Level 1 Complete!</h2>
       <p id="win-quest-label" class="win-quest-label">Animals 🦁 — Mammals</p>
-      <div class="win-stars" id="win-stars">
+      <div class="win-stars">
         <span class="win-star" id="win-star-1">☆</span>
         <span class="win-star" id="win-star-2">☆</span>
         <span class="win-star" id="win-star-3">☆</span>
       </div>
       <div class="win-stats">
-        <div class="win-stat">
-          <span class="win-stat-label">Time</span>
-          <span class="win-stat-value" id="win-time">0:00</span>
-        </div>
-        <div class="win-stat">
-          <span class="win-stat-label">Flips</span>
-          <span class="win-stat-value" id="win-flips">0</span>
-        </div>
-        <div class="win-stat">
-          <span class="win-stat-label">Best</span>
-          <span class="win-stat-value" id="win-best">-</span>
-        </div>
+        <div class="win-stat"><span class="win-stat-label">Time</span><span class="win-stat-value" id="win-time">0:00</span></div>
+        <div class="win-stat"><span class="win-stat-label">Flips</span><span class="win-stat-value" id="win-flips">0</span></div>
+        <div class="win-stat"><span class="win-stat-label">Best</span><span class="win-stat-value" id="win-best">-</span></div>
       </div>
       <div class="win-buttons">
-        <button id="win-claim-btn" class="win-btn win-btn-primary">🔐 Login to Claim Rewards</button>
+        <button id="share-arcade-btn" class="win-btn win-btn-share">📤 Share Result</button>
+        <button id="win-claim-btn" class="win-btn win-btn-primary">🔐 Login to Claim</button>
         <button id="win-continue-btn" class="win-btn win-btn-secondary">Continue ▶️</button>
       </div>
     </div>
   </div>
 
-  <!-- ============================================================
-       AUTH MODAL
-  ============================================================ -->
+  <!-- AUTH MODAL -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-card">
       <button id="close-modal-btn" class="close-btn">&times;</button>
