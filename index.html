@@ -22,15 +22,21 @@
     </div>
   </div>
 
-  <!-- ACCOUNT GATE (Sign up / Skip — mock auth) -->
+  <!-- ACCOUNT GATE -->
   <div id="account-gate-screen" class="hidden-layer">
     <div class="gate-inner">
       <h1 class="gate-logo">retenti<span class="gate-o">O</span><span class="gate-o">o</span><span class="gate-o">o</span></h1>
       <p class="gate-tagline">Play to remember</p>
-      <p class="gate-sub">Edutech games for curious minds. Sign up to save everywhere and unlock Ranked.</p>
-      <button type="button" id="gate-signup-btn" class="gate-btn gate-btn-primary">Sign Up</button>
-      <button type="button" id="gate-skip-btn" class="gate-btn gate-btn-secondary">Skip for now</button>
-      <p class="gate-hint">Skipping? Progress stays on this device. Arcade only until you sign up.</p>
+      <p class="gate-sub">Sign in to save progress everywhere, unlock Ranked, and play live with others soon.</p>
+      <button type="button" id="gate-google-btn" class="gate-btn gate-btn-google">
+        <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button type="button" id="gate-skip-btn" class="gate-btn gate-btn-secondary">Play as guest</button>
+      <p id="gate-config-warning" class="gate-config-warning hidden-layer">
+        Add <code>config.js</code> (from <code>config.example.js</code>) to enable Google sign-in.
+      </p>
+      <p class="gate-hint">Guests: progress on this device only · Arcade only · no Ranked</p>
     </div>
   </div>
 
@@ -44,9 +50,13 @@
         </div>
         <div class="hub-top-actions">
           <span class="hub-streak-pill" title="Platform streak">🔥 <span id="hub-streak-count">1</span></span>
+          <button type="button" class="hub-icon-btn" id="hub-friends-btn" title="Friends">👥</button>
           <button type="button" class="hub-icon-btn" id="hub-profile-btn" title="Profile">👤</button>
+          <button type="button" class="hub-signout-btn hidden-layer" id="hub-signout-btn" title="Sign out">Sign out</button>
         </div>
       </header>
+
+      <div id="hub-schema-banner" class="hub-schema-banner hidden-layer"></div>
 
       <button type="button" id="continue-game-btn" class="continue-game-btn hidden-layer">▶️ Continue <span id="continue-game-label">Matchbox</span></button>
 
@@ -91,9 +101,42 @@
     <div class="modal-card">
       <button type="button" id="close-ranked-lock-btn" class="close-btn" aria-label="Close">&times;</button>
       <h2>🏆 Ranked is locked</h2>
-      <p class="modal-subtitle">Sign up to compete in Ranked matches and climb the leaderboard.</p>
-      <button type="button" class="action-btn" id="ranked-lock-signup-btn">Sign Up</button>
+      <p class="modal-subtitle">Sign in with Google to compete in Ranked matches and climb the leaderboard.</p>
+      <button type="button" class="action-btn gate-btn-google ranked-lock-google" id="ranked-lock-signup-btn">
+        <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button type="button" class="win-btn win-btn-secondary" id="ranked-lock-skip-btn">Play as guest</button>
       <button type="button" class="win-btn win-btn-secondary" id="ranked-lock-cancel-btn">Maybe later</button>
+    </div>
+  </div>
+
+  <!-- FRIENDS -->
+  <div id="friends-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button type="button" class="back-btn" id="back-from-friends">← Games</button>
+        <h2 class="panel-title">Friends</h2>
+      </div>
+      <p class="friends-hint">Link test accounts: copy your code on each Gmail login, then add friends on the other accounts.</p>
+      <div class="friends-code-card">
+        <span class="friends-code-label">Your friend code</span>
+        <div class="friends-code-row">
+          <code id="my-friend-code" class="friends-code-val">——</code>
+          <button type="button" class="back-btn" id="copy-friend-code-btn">Copy</button>
+        </div>
+      </div>
+      <div class="friends-add-card">
+        <label for="add-friend-code-input">Add friend by code</label>
+        <div class="friends-code-row">
+          <input type="text" id="add-friend-code-input" maxlength="12" placeholder="e.g. A1B2C3D4" autocomplete="off">
+          <button type="button" class="action-btn" id="add-friend-btn">Add</button>
+        </div>
+        <p id="add-friend-msg" class="friends-msg"></p>
+      </div>
+      <h3 class="section-title friends-list-title">Your friends</h3>
+      <div id="friends-list" class="friends-list"></div>
+      <p id="friends-guest-note" class="friends-guest-note hidden-layer">Sign in with Google to use friends and live Ranked.</p>
     </div>
   </div>
 
@@ -263,22 +306,41 @@
         <div class="player-badge"><span id="rv-avatar">🦄</span> <span id="rv-name">Player</span></div>
       </div>
       <h2 class="map-title">Vote for a Topic!</h2>
-      <p class="ranked-subtitle">The most voted topic will be played by all 10 players.</p>
+      <p class="ranked-subtitle">Live lobby — vote with real players (up to 10).</p>
+      <p class="ranked-live-status" id="ranked-live-status"></p>
       <div class="vote-grid" id="vote-grid"></div>
       <div class="vote-results" id="vote-results"></div>
       <button class="ranked-action-btn hidden-layer" id="vote-confirm-btn">Confirm Vote ✓</button>
     </div>
   </div>
 
-  <!-- RANKED: WAITING ROOM -->
+  <!-- RANKED: WAITING ROOM + CHAT -->
   <div id="ranked-waiting-screen" class="hidden-layer">
-    <div class="ranked-inner">
-      <h2 class="map-title">⚔️ Ranked Match</h2>
-      <p class="ranked-subtitle" id="ranked-topic-label">Topic: Animals 🦁</p>
-      <div class="waiting-room" id="waiting-room"></div>
-      <div class="waiting-countdown" id="waiting-countdown">
-        <p>Match starts in</p>
-        <span id="waiting-timer">5</span>
+    <div class="ranked-inner ranked-lobby-wide">
+      <div class="map-header">
+        <button type="button" class="back-btn" id="back-from-waiting">← Leave</button>
+        <div class="player-badge"><span id="rw-avatar">🦄</span> <span id="rw-name">Player</span></div>
+      </div>
+      <h2 class="map-title">⚔️ Live Lobby</h2>
+      <p class="ranked-subtitle" id="ranked-topic-label">Waiting for votes…</p>
+      <p class="ranked-live-status" id="ranked-lobby-player-count">Players: 1</p>
+      <div class="ranked-lobby-grid">
+        <div class="lobby-players-col">
+          <h3 class="lobby-col-title">Players</h3>
+          <div class="waiting-room" id="waiting-room"></div>
+          <div class="waiting-countdown" id="waiting-countdown">
+            <p id="waiting-countdown-label">Match starts in</p>
+            <span id="waiting-timer">—</span>
+          </div>
+        </div>
+        <div class="lobby-chat-col">
+          <h3 class="lobby-col-title">💬 Chat</h3>
+          <div class="chat-messages" id="chat-messages"></div>
+          <form id="chat-form" class="chat-form">
+            <input type="text" id="chat-input" maxlength="280" placeholder="Say hi…" autocomplete="off">
+            <button type="submit" class="chat-send-btn">Send</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -304,8 +366,14 @@
     </nav>
 
     <div class="ranked-layout">
-      <!-- Live players panel -->
       <div class="live-players-panel" id="live-players-panel"></div>
+      <div class="ranked-game-chat hidden-layer" id="ranked-game-chat">
+        <div class="chat-messages chat-messages-compact" id="game-chat-messages"></div>
+        <form id="game-chat-form" class="chat-form">
+          <input type="text" id="game-chat-input" maxlength="280" placeholder="Chat…" autocomplete="off">
+          <button type="submit" class="chat-send-btn">Send</button>
+        </form>
+      </div>
       <!-- Game board -->
       <div class="wrapper ranked-wrapper">
         <ul class="cards" id="ranked-cards"></ul>
@@ -493,31 +561,22 @@
 
   <!-- AUTH MODAL -->
   <div id="auth-modal" class="modal-overlay">
-    <div class="modal-card">
-      <button id="close-modal-btn" class="close-btn">&times;</button>
-      <h2 id="modal-title">Create Account</h2>
-      <p id="modal-subtitle">Join retentiOoo &amp; dominate the leaderboard!</p>
-      <form id="auth-form">
-        <div class="input-group" id="username-wrapper">
-          <label for="auth-username">Username</label>
-          <input type="text" id="auth-username" placeholder="Choose a nickname" required>
-        </div>
-        <div class="input-group">
-          <label for="auth-email">Email Address</label>
-          <input type="email" id="auth-email" placeholder="name@example.com" required>
-        </div>
-        <div class="input-group">
-          <label for="auth-password">Password</label>
-          <input type="password" id="auth-password" placeholder="••••••••" required>
-        </div>
-        <button type="submit" id="submit-auth-btn" class="action-btn">Sign Up</button>
-      </form>
-      <p class="switch-mode-text">
-        Already have an account? <a href="#" id="switch-auth-mode">Log In</a>
-      </p>
+    <div class="modal-card auth-modal-card">
+      <button type="button" id="close-modal-btn" class="close-btn" aria-label="Close">&times;</button>
+      <h2 id="modal-title">Sign in</h2>
+      <p id="modal-subtitle">Use Google to save progress, add friends, and play live Ranked.</p>
+      <button type="button" id="auth-google-btn" class="gate-btn gate-btn-google auth-google-full">
+        <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button type="button" id="auth-skip-btn" class="gate-btn gate-btn-secondary auth-skip-full">Play as guest</button>
+      <p class="auth-modal-hint">Guests: this device only · Arcade only · no Ranked or friends</p>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <div id="cloud-save-toast" class="cloud-save-toast hidden-layer" role="status"></div>
+
+  <script src="config.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>

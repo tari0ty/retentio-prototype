@@ -1,6 +1,42 @@
 // ============================================================
 //  retentiOoo — script.js
 // ============================================================
+import {
+  initAuth,
+  isAuthConfigured,
+  isAuthenticated,
+  signInWithGoogle,
+  signOut,
+  ensureProfileRow,
+  fetchServerProfile,
+  upsertServerProfile,
+  applyProgressBlob,
+  checkProfilesReady,
+  getUserId,
+} from "./js/auth.js";
+import {
+  checkMultiplayerReady,
+  joinOrCreateLobby,
+  leaveCurrentRoom,
+  fetchRoom,
+  fetchRoomMembers,
+  fetchChatMessages,
+  castVote,
+  sendChatMessage,
+  subscribeToRoom,
+  tryBeginMatch,
+  updateMyRoomProgress,
+  finishMyRoomResult,
+  MIN_PLAYERS_TO_START,
+} from "./js/multiplayer.js";
+import {
+  ensureFriendCode,
+  fetchFriendsList,
+  addFriendByCode,
+  removeFriend,
+  checkFriendsReady,
+} from "./js/friends.js";
+
 document.addEventListener("DOMContentLoaded", function () {
 
   // ----------------------------------------------------------
@@ -57,18 +93,11 @@ document.addEventListener("DOMContentLoaded", function () {
   let hubSearchQuery = "";
   let quizReturnTo = "hub";
 
-  // Mock players for ranked
-  const MOCK_PLAYERS = [
-    { nickname:"SuperBrain",  avatar:"unicorn" },
-    { nickname:"DragonKid",   avatar:"dragon"  },
-    { nickname:"RoboMaster",  avatar:"robot"   },
-    { nickname:"AlienGenius", avatar:"alien"   },
-    { nickname:"StarChaser",  avatar:"unicorn" },
-    { nickname:"FlipKing",    avatar:"dragon"  },
-    { nickname:"MemoryAce",   avatar:"robot"   },
-    { nickname:"QuickMatch",  avatar:"alien"   },
-    { nickname:"CardShark",   avatar:"unicorn" },
-  ];
+  let rankedLiveMembers = [];
+  let rankedBoardSeed = null;
+  let rankedCountdownTimer = null;
+  let rankedVoteConfirmed = false;
+  let liveRankedActive = false;
 
   // ----------------------------------------------------------
   //  PROFILE
@@ -104,7 +133,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let rankedInterval=null, rankedMatchedCount=0;
   let rankedCardOne=null, rankedCardTwo=null, rankedDisable=false;
   let rankedTopic="Animals", rankedVote="";
-  let livePlayerIntervals=[];
 
   // ----------------------------------------------------------
   //  ELEMENTS
@@ -114,6 +142,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const accountGateScreen    = document.getElementById("account-gate-screen");
   const gamesHubScreen       = document.getElementById("games-hub-screen");
   const parentDashboardScreen= document.getElementById("parent-dashboard-screen");
+  const friendsScreen          = document.getElementById("friends-screen");
   const comingSoonModal      = document.getElementById("coming-soon-modal");
   const rankedLockModal      = document.getElementById("ranked-lock-modal");
   const tutorialScreen       = document.getElementById("tutorial-screen");
@@ -131,7 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const winModal             = document.getElementById("win-modal");
 
   function hideAll() {
-    [accountGateScreen,gamesHubScreen,parentDashboardScreen,
+    [accountGateScreen,gamesHubScreen,parentDashboardScreen,friendsScreen,
      gameModeScreen,questSelectScreen,mapScreen,gameScreen,
      rankedVoteScreen,rankedWaitingScreen,rankedGameScreen,
      rankedResultsScreen,profileScreen,leaderboardScreen].forEach(s=>{
@@ -141,8 +170,192 @@ document.addEventListener("DOMContentLoaded", function () {
     quizScreen.classList.add("hidden-layer");
   }
 
+  let cloudSaveToastTimer = null;
+
+  function showCloudSaveToast(state, message) {
+    const el = document.getElementById("cloud-save-toast");
+    if (!el) return;
+    el.classList.remove("hidden-layer", "toast-saving", "toast-saved", "toast-error");
+    if (state === "hide") {
+      el.classList.add("hidden-layer");
+      return;
+    }
+    el.classList.add(`toast-${state}`);
+    el.textContent = message;
+    clearTimeout(cloudSaveToastTimer);
+    if (state !== "saving") {
+      cloudSaveToastTimer = setTimeout(() => showCloudSaveToast("hide"), 2800);
+    }
+  }
+
   function saveProfile() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(activeProfile));
+    if (!isAuthenticated()) return;
+
+    showCloudSaveToast("saving", "☁️ Saving to cloud…");
+    upsertServerProfile(activeProfile).then((result) => {
+      if (result?.ok) {
+        showCloudSaveToast("saved", "☁️ Progress saved");
+      } else if (!result?.skipped) {
+        showCloudSaveToast("error", "☁️ Cloud save failed — check Supabase");
+      } else {
+        showCloudSaveToast("hide");
+      }
+    });
+  }
+
+  async function refreshSchemaBanner() {
+    const banner = document.getElementById("hub-schema-banner");
+    if (!banner) return;
+    if (!isAuthenticated()) {
+      banner.classList.add("hidden-layer");
+      return;
+    }
+    const [profiles, multiplayer, friends] = await Promise.all([
+      checkProfilesReady(),
+      checkMultiplayerReady(),
+      checkFriendsReady(),
+    ]);
+    const missing = [];
+    if (!profiles.ok && profiles.reason === "schema") missing.push("profiles (schema.sql)");
+    if (!multiplayer.ok && multiplayer.reason === "schema") {
+      missing.push("live Ranked (schema-multiplayer.sql)");
+    }
+    if (!friends.ok && friends.reason === "schema") {
+      missing.push("friends (schema-friends.sql)");
+    }
+    if (missing.length) {
+      banner.classList.remove("hidden-layer");
+      banner.innerHTML = `⚠️ Run in Supabase SQL: <strong>${missing.join("</strong> and <strong>")}</strong>`;
+    } else {
+      banner.classList.add("hidden-layer");
+    }
+  }
+
+  function syncAuthFlags() {
+    const authed = isAuthenticated();
+    isLoggedIn = authed;
+    if (authed) {
+      activeProfile.isLoggedIn = true;
+      activeProfile.isGuest = false;
+    }
+  }
+
+  async function mergeServerProfileIntoLocal() {
+    await ensureProfileRow();
+    const row = await fetchServerProfile();
+    if (!row) return;
+
+    if (row.display_name && !activeProfile.nickname) {
+      activeProfile.nickname = row.display_name;
+    }
+    if (row.avatar) activeProfile.avatar = row.avatar;
+    if (row.platform_streak != null) {
+      activeProfile.platformStreak = row.platform_streak;
+    }
+    if (row.last_streak_date) {
+      activeProfile.lastStreakDate = row.last_streak_date;
+    }
+    applyProgressBlob(activeProfile, row.progress);
+
+    if (!activeProfile.stars) activeProfile.stars = {1:{},2:{},3:{},4:{},5:{}};
+    if (!activeProfile.unlockedQuests) activeProfile.unlockedQuests = [1];
+    if (!activeProfile.unlockedLevels) activeProfile.unlockedLevels = {1:1,2:1,3:1,4:1,5:1};
+    if (!activeProfile.bestStats) activeProfile.bestStats = {};
+
+    saveProfile();
+  }
+
+  async function mergeGuestProgressToCloud() {
+    const guestRaw = localStorage.getItem(STORAGE_KEY);
+    if (!guestRaw || !isAuthenticated()) return;
+    try {
+      const guest = JSON.parse(guestRaw);
+      const guestHasPlay = Object.values(guest.stars || {}).some(
+        (q) => Object.keys(q).length > 0
+      );
+      const localHasPlay = Object.values(activeProfile.stars || {}).some(
+        (q) => Object.keys(q).length > 0
+      );
+      if (guestHasPlay && !localHasPlay) {
+        applyProgressBlob(activeProfile, profileToProgressFromGuest(guest));
+        saveProfile();
+      }
+    } catch (_) { /* ignore */ }
+  }
+
+  function profileToProgressFromGuest(guest) {
+    return {
+      currentQuest: guest.currentQuest,
+      currentLevel: guest.currentLevel,
+      unlockedLevels: guest.unlockedLevels,
+      unlockedQuests: guest.unlockedQuests,
+      stars: guest.stars,
+      bestStats: guest.bestStats,
+      totalFlips: guest.totalFlips,
+      totalSeconds: guest.totalSeconds,
+      matchboxTutorialDone: guest.matchboxTutorialDone,
+      lastGame: guest.lastGame,
+    };
+  }
+
+  function updateHubAuthUI() {
+    const signOutBtn = document.getElementById("hub-signout-btn");
+    const googleBtn = document.getElementById("gate-google-btn");
+    const warn = document.getElementById("gate-config-warning");
+
+    if (signOutBtn) {
+      signOutBtn.classList.toggle("hidden-layer", !isAuthenticated());
+    }
+    if (googleBtn) {
+      googleBtn.disabled = !isAuthConfigured();
+    }
+    if (warn) {
+      warn.classList.toggle("hidden-layer", isAuthConfigured());
+    }
+  }
+
+  function needsOnboardingQuiz() {
+    return !activeProfile.nickname || !activeProfile.avatar;
+  }
+
+  function showOnboardingQuiz(returnTo) {
+    quizReturnTo = returnTo || "hub";
+    hideAll();
+    quizScreen.classList.remove("hidden-layer");
+  }
+
+  async function routeAfterBoot() {
+    syncAuthFlags();
+    updateHubAuthUI();
+    loadProfile();
+
+    if (isAuthenticated()) {
+      activeProfile.gateCompleted = true;
+      activeProfile.isGuest = false;
+      await mergeServerProfileIntoLocal();
+      await mergeGuestProgressToCloud();
+      syncAuthFlags();
+
+      if (needsOnboardingQuiz()) {
+        showOnboardingQuiz("hub");
+        return;
+      }
+      launchHub();
+      refreshSchemaBanner();
+      return;
+    }
+
+    if (loadProfile() && activeProfile.gateCompleted) {
+      if (needsOnboardingQuiz() && !activeProfile.isGuest) {
+        showOnboardingQuiz("hub");
+        return;
+      }
+      launchHub();
+      return;
+    }
+
+    launchAccountGate();
   }
 
   function loadProfile() {
@@ -155,7 +368,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!activeProfile.unlockedQuests) activeProfile.unlockedQuests = [1];
     if (!activeProfile.unlockedLevels) activeProfile.unlockedLevels = {1:1,2:1,3:1,4:1,5:1};
     if (!activeProfile.bestStats) activeProfile.bestStats = {};
-    isLoggedIn = !!activeProfile.isLoggedIn;
+    if (!isAuthenticated()) {
+      isLoggedIn = !!activeProfile.isLoggedIn && !activeProfile.isGuest;
+    }
     if (activeProfile.nickname) {
       activeProfile.gateCompleted = true;
       if (!activeProfile.matchboxTutorialDone) {
@@ -291,7 +506,10 @@ document.addEventListener("DOMContentLoaded", function () {
     hideAll();
     activeProfile.gateCompleted = true;
     saveProfile();
+    syncAuthFlags();
+    updateHubAuthUI();
     renderHub();
+    refreshSchemaBanner();
     gamesHubScreen.classList.remove("hidden-layer");
   }
 
@@ -327,12 +545,17 @@ document.addEventListener("DOMContentLoaded", function () {
     launchGameMode();
   }
 
-  function completeGateSignUp() {
-    activeProfile.isGuest = false;
-    activeProfile.isLoggedIn = true;
-    activeProfile.gateCompleted = true;
-    quizReturnTo = "hub";
-    quizScreen.classList.remove("hidden-layer");
+  async function startGoogleSignIn() {
+    if (!isAuthConfigured()) {
+      alert("Supabase is not configured yet. Copy config.example.js to config.js and add your keys.");
+      return;
+    }
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      console.error(err);
+      alert("Could not start Google sign-in. Check the browser console and Supabase setup.");
+    }
   }
 
   function completeGateSkip() {
@@ -374,6 +597,23 @@ document.addEventListener("DOMContentLoaded", function () {
   //  PHASE 1 — PRELOADER
   // ----------------------------------------------------------
   const LOAD_DURATION=5000;
+  let bootPreloaderDone=false;
+  let bootAuthDone=false;
+
+  async function tryFinishBoot(){
+    if(!bootPreloaderDone||!bootAuthDone) return;
+    await routeAfterBoot();
+  }
+
+  initAuth().then(()=>{
+    bootAuthDone=true;
+    tryFinishBoot();
+  }).catch((err)=>{
+    console.error("[retentiOoo] auth init:",err);
+    bootAuthDone=true;
+    tryFinishBoot();
+  });
+
   if(preloader&&loadingBar){
     loadingBar.style.transitionDuration=`${LOAD_DURATION}ms`;
     setTimeout(()=>{loadingBar.style.width="100%";},50);
@@ -381,21 +621,31 @@ document.addEventListener("DOMContentLoaded", function () {
       preloader.classList.add("preloader-fade-out");
       setTimeout(()=>{
         preloader.remove();
-        if (loadProfile() && activeProfile.gateCompleted) {
-          launchHub();
-        } else {
-          launchAccountGate();
-        }
+        bootPreloaderDone=true;
+        tryFinishBoot();
       },500);
     },LOAD_DURATION+50);
+  } else {
+    bootPreloaderDone=true;
   }
 
-  document.getElementById("gate-signup-btn").addEventListener("click", () => {
-    accountGateScreen.classList.add("hidden-layer");
-    completeGateSignUp();
-  });
-
+  document.getElementById("gate-google-btn").addEventListener("click", startGoogleSignIn);
   document.getElementById("gate-skip-btn").addEventListener("click", completeGateSkip);
+
+  document.getElementById("hub-signout-btn").addEventListener("click", async ()=>{
+    try{
+      await signOut();
+      isLoggedIn=false;
+      activeProfile.isLoggedIn=false;
+      activeProfile.isGuest=true;
+      saveProfile();
+      updateHubAuthUI();
+      launchAccountGate();
+    }catch(err){
+      console.error(err);
+      alert("Could not sign out.");
+    }
+  });
 
   document.getElementById("hub-search").addEventListener("input", (e) => {
     hubSearchQuery = e.target.value;
@@ -408,12 +658,109 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("hub-profile-btn").addEventListener("click", () => {
     if (activeProfile.nickname) launchProfileScreen();
-    else completeGateSignUp();
+    else if (isAuthenticated()) showOnboardingQuiz("hub");
+    else startGoogleSignIn();
   });
 
   document.getElementById("hub-parent-btn").addEventListener("click", () => {
     hideAll();
     parentDashboardScreen.classList.remove("hidden-layer");
+  });
+
+  async function launchFriendsScreen() {
+    hideAll();
+    const guestNote = document.getElementById("friends-guest-note");
+    const codeEl = document.getElementById("my-friend-code");
+    const listEl = document.getElementById("friends-list");
+    const addMsg = document.getElementById("add-friend-msg");
+
+    if (!isAuthenticated()) {
+      guestNote.classList.remove("hidden-layer");
+      codeEl.textContent = "——";
+      listEl.innerHTML = "";
+      friendsScreen.classList.remove("hidden-layer");
+      return;
+    }
+
+    guestNote.classList.add("hidden-layer");
+    addMsg.textContent = "";
+    addMsg.className = "friends-msg";
+
+    try {
+      const code = await ensureFriendCode();
+      codeEl.textContent = code || "——";
+      await renderFriendsList();
+    } catch (err) {
+      console.error(err);
+      codeEl.textContent = "Error";
+      listEl.innerHTML = `<p class="friends-empty">Run schema-friends.sql in Supabase.</p>`;
+    }
+
+    friendsScreen.classList.remove("hidden-layer");
+  }
+
+  async function renderFriendsList() {
+    const listEl = document.getElementById("friends-list");
+    const friends = await fetchFriendsList();
+    if (!friends.length) {
+      listEl.innerHTML = `<p class="friends-empty">No friends yet. Share your code with other test accounts!</p>`;
+      return;
+    }
+    listEl.innerHTML = "";
+    friends.forEach((f) => {
+      const row = document.createElement("div");
+      row.className = "friend-row";
+      row.innerHTML = `
+        <span class="friend-row-emoji">${AVATAR_EMOJI[f.avatar] || "🦄"}</span>
+        <div class="friend-row-info">
+          <div class="friend-row-name">${f.display_name || "Player"}</div>
+          <div class="friend-row-code">Code: ${f.friend_code || "—"}</div>
+        </div>
+        <button type="button" class="back-btn friend-remove-btn" data-id="${f.id}">Remove</button>
+      `;
+      row.querySelector(".friend-remove-btn").addEventListener("click", async () => {
+        await removeFriend(f.id);
+        await renderFriendsList();
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  document.getElementById("hub-friends-btn").addEventListener("click", () => {
+    if (!isAuthenticated()) {
+      document.getElementById("auth-modal").classList.add("active");
+      return;
+    }
+    launchFriendsScreen();
+  });
+
+  document.getElementById("back-from-friends").addEventListener("click", launchHub);
+
+  document.getElementById("copy-friend-code-btn").addEventListener("click", async () => {
+    const code = document.getElementById("my-friend-code").textContent;
+    if (!code || code === "——") return;
+    try {
+      await navigator.clipboard.writeText(code);
+      document.getElementById("add-friend-msg").textContent = "Code copied!";
+      document.getElementById("add-friend-msg").className = "friends-msg ok";
+    } catch (_) {
+      alert("Copy: " + code);
+    }
+  });
+
+  document.getElementById("add-friend-btn").addEventListener("click", async () => {
+    const input = document.getElementById("add-friend-code-input");
+    const msg = document.getElementById("add-friend-msg");
+    try {
+      const added = await addFriendByCode(input.value);
+      msg.textContent = `Added ${added.display_name || "friend"}!`;
+      msg.className = "friends-msg ok";
+      input.value = "";
+      await renderFriendsList();
+    } catch (err) {
+      msg.textContent = err.message || "Could not add friend.";
+      msg.className = "friends-msg err";
+    }
   });
 
   document.getElementById("back-from-parent").addEventListener("click", launchHub);
@@ -436,10 +783,13 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("ranked-lock-cancel-btn").addEventListener("click", () => {
     rankedLockModal.classList.remove("active");
   });
+
+  document.getElementById("ranked-lock-skip-btn").addEventListener("click", () => {
+    rankedLockModal.classList.remove("active");
+  });
   document.getElementById("ranked-lock-signup-btn").addEventListener("click", () => {
     rankedLockModal.classList.remove("active");
-    accountGateScreen.classList.add("hidden-layer");
-    completeGateSignUp();
+    startGoogleSignIn();
   });
 
   document.getElementById("back-to-hub-from-matchbox").addEventListener("click", exitToHub);
@@ -564,7 +914,7 @@ document.addEventListener("DOMContentLoaded", function () {
       errorEl.classList.add("hidden-layer");
       activeProfile.nickname=nickname;
       activeProfile.avatar=this.dataset.avatar;
-      if (!activeProfile.isLoggedIn && !activeProfile.isGuest) {
+      if (isAuthenticated()) {
         activeProfile.isLoggedIn = true;
         activeProfile.isGuest = false;
       }
@@ -601,7 +951,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     gameModeScreen.classList.add("hidden-layer");
-    launchRankedVote();
+    launchRankedLive();
   });
 
   // ----------------------------------------------------------
@@ -734,7 +1084,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const imagePool=[];
     for(let i=0;i<pairCount;i++) imagePool.push(allImages[i%allImages.length]);
     const pairs=[...imagePool,...imagePool];
-    shuffleArray(pairs);
+    if (isRanked && rankedBoardSeed != null) {
+      seededShuffleArray(pairs, rankedBoardSeed);
+    } else {
+      shuffleArray(pairs);
+    }
 
     cardGrid.style.display="grid";
     cardGrid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
@@ -774,7 +1128,12 @@ document.addEventListener("DOMContentLoaded", function () {
       else{ matchedCount++; }
       c1.removeEventListener("click",isRanked?flipRankedCard:flipCard);
       c2.removeEventListener("click",isRanked?flipRankedCard:flipCard);
-      if(isRanked){ rankedCardOne=rankedCardTwo=null; rankedDisable=false;
+      if(isRanked){
+        rankedCardOne=rankedCardTwo=null; rankedDisable=false;
+        updateMyLiveProgress();
+        if (liveRankedActive) {
+          updateMyRoomProgress(rankedMatchedCount, rankedFlips);
+        }
         if(rankedMatchedCount===8) endRankedGame(true);
       } else {
         cardOne=cardTwo=null; disableDeck=false;
@@ -791,118 +1150,305 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ----------------------------------------------------------
-  //  RANKED FLOW
+  //  LIVE RANKED FLOW
   // ----------------------------------------------------------
-  function launchRankedVote(){
+  function memberKey(m) {
+    return (m.user_id || m.nickname || "").toString();
+  }
+
+  function renderVoteResultsFromVotes(votes) {
+    const voteResults = document.getElementById("vote-results");
+    if (!voteResults) return;
+    voteResults.innerHTML = "";
+    const sorted = QUESTS.slice().sort(
+      (a, b) => (votes[b.subject] || 0) - (votes[a.subject] || 0)
+    );
+    const total = Object.values(votes || {}).reduce((a, b) => a + b, 0) || 1;
+    sorted.forEach((q) => {
+      const pct = Math.round(((votes[q.subject] || 0) / total) * 100);
+      const bar = document.createElement("div");
+      bar.className = "vote-bar-row";
+      bar.innerHTML = `
+        <span class="vote-bar-label">${q.emoji} ${q.subject}</span>
+        <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%"></div></div>
+        <span class="vote-bar-pct">${pct}%</span>
+      `;
+      voteResults.appendChild(bar);
+    });
+  }
+
+  function renderWaitingRoomMembers(members) {
+    const waitingRoom = document.getElementById("waiting-room");
+    const countEl = document.getElementById("ranked-lobby-player-count");
+    if (!waitingRoom) return;
+    waitingRoom.innerHTML = "";
+    members.forEach((m) => {
+      const div = document.createElement("div");
+      div.className = "waiting-player";
+      div.innerHTML = `<span class="waiting-avatar">${AVATAR_EMOJI[m.avatar] || "🦄"}</span><span class="waiting-name">${m.display_name}</span><span class="waiting-ready">✓</span>`;
+      waitingRoom.appendChild(div);
+    });
+    if (countEl) {
+      countEl.textContent = `Players: ${members.length} (need ${MIN_PLAYERS_TO_START} to start)`;
+    }
+  }
+
+  function appendChatTo(containerId, msg, scroll = true) {
+    const box = document.getElementById(containerId);
+    if (!box || !msg) return;
+    const line = document.createElement("div");
+    line.className = "chat-line";
+    const time = new Date(msg.created_at || Date.now()).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    line.innerHTML = `<span class="chat-time">${time}</span> <strong>${msg.display_name}</strong>: ${escapeChat(msg.body)}`;
+    box.appendChild(line);
+    if (scroll) box.scrollTop = box.scrollHeight;
+  }
+
+  function escapeChat(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  async function loadChatHistory(containerId) {
+    const messages = await fetchChatMessages();
+    const box = document.getElementById(containerId);
+    if (box) box.innerHTML = "";
+    messages.forEach((m) => appendChatTo(containerId, m, false));
+    if (box) box.scrollTop = box.scrollHeight;
+  }
+
+  function setupRankedRealtimeHandlers() {
+    subscribeToRoom({
+      onRoom: async (room) => {
+        if (!room) return;
+        renderVoteResultsFromVotes(room.votes || {});
+        const statusEl = document.getElementById("ranked-live-status");
+        if (statusEl) statusEl.textContent = `Lobby · ${rankedLiveMembers.length} online`;
+
+        if (room.status === "playing") {
+          clearInterval(rankedCountdownTimer);
+          rankedTopic = room.topic || "Animals";
+          rankedBoardSeed = room.board_seed;
+          if (rankedGameScreen.classList.contains("hidden-layer")) {
+            rankedWaitingScreen.classList.add("hidden-layer");
+            rankedVoteScreen.classList.add("hidden-layer");
+            launchRankedGame();
+          }
+        }
+      },
+      onMembers: (members) => {
+        rankedLiveMembers = members;
+        renderWaitingRoomMembers(members);
+        buildLivePlayersPanel(members);
+        maybeStartLobbyCountdown(members.length);
+      },
+      onChat: (msg) => {
+        if (!rankedWaitingScreen.classList.contains("hidden-layer")) {
+          appendChatTo("chat-messages", msg);
+        }
+        if (!document.getElementById("ranked-game-chat")?.classList.contains("hidden-layer")) {
+          appendChatTo("game-chat-messages", msg);
+        }
+      },
+    });
+  }
+
+  function maybeStartLobbyCountdown(playerCount) {
+    if (!rankedVoteConfirmed || playerCount < MIN_PLAYERS_TO_START) return;
+    const countEl = document.getElementById("waiting-timer");
+    const labelEl = document.getElementById("waiting-countdown-label");
+    if (!countEl || countEl.dataset.running === "1") return;
+
+    countEl.dataset.running = "1";
+    if (labelEl) labelEl.textContent = "Match starts in";
+    let count = 8;
+    countEl.textContent = count;
+
+    clearInterval(rankedCountdownTimer);
+    rankedCountdownTimer = setInterval(async () => {
+      count--;
+      countEl.textContent = count;
+      if (count <= 0) {
+        clearInterval(rankedCountdownTimer);
+        countEl.dataset.running = "0";
+        try {
+          await tryBeginMatch();
+          const room = await fetchRoom();
+          if (room?.status !== "playing") {
+            countEl.textContent = "…";
+            if (labelEl) labelEl.textContent = "Starting match…";
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Could not start match. Try again.");
+        }
+      }
+    }, 1000);
+  }
+
+  async function launchRankedLive() {
+    const mp = await checkMultiplayerReady();
+    if (!mp.ok) {
+      const msg =
+        mp.reason === "schema"
+          ? "Run schema-multiplayer.sql and schema-fix-rls.sql in Supabase SQL Editor."
+          : "Sign in and configure Supabase to play live Ranked.";
+      alert(msg);
+      launchGameMode();
+      return;
+    }
+
+    try {
+      liveRankedActive = true;
+      rankedVoteConfirmed = false;
+      clearInterval(rankedCountdownTimer);
+      await joinOrCreateLobby(
+        activeProfile.nickname || "Player",
+        activeProfile.avatar || "unicorn"
+      );
+      setupRankedRealtimeHandlers();
+      const room = await fetchRoom();
+      rankedLiveMembers = await fetchRoomMembers();
+      if (room?.votes) renderVoteResultsFromVotes(room.votes);
+      launchRankedVote();
+    } catch (err) {
+      console.error(err);
+      liveRankedActive = false;
+      const errText = String(err.message || err);
+      const hint = errText.includes("recursion")
+        ? "\n\nFix: run supabase/schema-fix-rls.sql in Supabase SQL Editor."
+        : "";
+      alert("Could not join live lobby: " + errText + hint);
+      launchGameMode();
+    }
+  }
+
+  function launchRankedVote() {
     hideAll();
-    document.getElementById("rv-avatar").textContent=AVATAR_EMOJI[activeProfile.avatar]||"🦄";
-    document.getElementById("rv-name").textContent=activeProfile.nickname||"Player";
+    document.getElementById("rv-avatar").textContent = AVATAR_EMOJI[activeProfile.avatar] || "🦄";
+    document.getElementById("rv-name").textContent = activeProfile.nickname || "Player";
 
-    // Mock votes — randomised
-    const mockVotes={};
-    QUESTS.forEach(q=>{ mockVotes[q.subject]=Math.floor(Math.random()*5)+1; });
+    const voteGrid = document.getElementById("vote-grid");
+    const voteResults = document.getElementById("vote-results");
+    const confirmBtn = document.getElementById("vote-confirm-btn");
+    const statusEl = document.getElementById("ranked-live-status");
+    voteGrid.innerHTML = "";
+    voteResults.innerHTML = "";
+    rankedVote = "";
 
-    const voteGrid=document.getElementById("vote-grid");
-    const voteResults=document.getElementById("vote-results");
-    const confirmBtn=document.getElementById("vote-confirm-btn");
-    voteGrid.innerHTML=""; voteResults.innerHTML="";
-    rankedVote="";
+    if (statusEl) {
+      statusEl.textContent = `Live · ${rankedLiveMembers.length} player(s) in lobby`;
+    }
 
-    QUESTS.forEach(quest=>{
-      const btn=document.createElement("button");
-      btn.className="vote-card";
-      btn.dataset.subject=quest.subject;
-      btn.innerHTML=`<span class="vote-emoji">${quest.emoji}</span><span class="vote-label">${quest.subject}</span>`;
-      btn.addEventListener("click",()=>{
-        document.querySelectorAll(".vote-card").forEach(b=>b.classList.remove("vote-selected"));
+    QUESTS.forEach((quest) => {
+      const btn = document.createElement("button");
+      btn.className = "vote-card";
+      btn.dataset.subject = quest.subject;
+      btn.innerHTML = `<span class="vote-emoji">${quest.emoji}</span><span class="vote-label">${quest.subject}</span>`;
+      btn.addEventListener("click", async () => {
+        document.querySelectorAll(".vote-card").forEach((b) => b.classList.remove("vote-selected"));
         btn.classList.add("vote-selected");
-        rankedVote=quest.subject;
-        mockVotes[quest.subject]=(mockVotes[quest.subject]||0)+1;
+        rankedVote = quest.subject;
         confirmBtn.classList.remove("hidden-layer");
-
-        // Show vote results
-        voteResults.innerHTML="";
-        const sorted=QUESTS.slice().sort((a,b)=>(mockVotes[b.subject]||0)-(mockVotes[a.subject]||0));
-        sorted.forEach(q=>{
-          const total=Object.values(mockVotes).reduce((a,b)=>a+b,0);
-          const pct=Math.round(((mockVotes[q.subject]||0)/total)*100);
-          const bar=document.createElement("div");
-          bar.className="vote-bar-row";
-          bar.innerHTML=`
-            <span class="vote-bar-label">${q.emoji} ${q.subject}</span>
-            <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%"></div></div>
-            <span class="vote-bar-pct">${pct}%</span>
-          `;
-          voteResults.appendChild(bar);
-        });
+        try {
+          await castVote(quest.subject);
+          const room = await fetchRoom();
+          renderVoteResultsFromVotes(room?.votes || {});
+        } catch (err) {
+          console.error(err);
+        }
       });
       voteGrid.appendChild(btn);
     });
 
-    confirmBtn.addEventListener("click",()=>{
-      // Winner = highest voted
-      const winner=QUESTS.reduce((a,b)=>
-        (mockVotes[a.subject]||0)>=(mockVotes[b.subject]||0)?a:b
-      );
-      rankedTopic=winner.subject;
+    const onConfirm = () => {
+      rankedVoteConfirmed = true;
+      rankedTopic = rankedVote || "Animals";
       launchRankedWaiting();
-    },{once:true});
+    };
+    const newConfirm = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+    newConfirm.addEventListener("click", onConfirm, { once: true });
 
     rankedVoteScreen.classList.remove("hidden-layer");
   }
 
-  document.getElementById("back-from-vote").addEventListener("click",()=>{
+  document.getElementById("back-from-vote").addEventListener("click", async () => {
+    await leaveCurrentRoom();
+    liveRankedActive = false;
     rankedVoteScreen.classList.add("hidden-layer");
     launchGameMode();
   });
 
-  function launchRankedWaiting(){
+  document.getElementById("back-from-waiting").addEventListener("click", async () => {
+    clearInterval(rankedCountdownTimer);
+    await leaveCurrentRoom();
+    liveRankedActive = false;
+    rankedWaitingScreen.classList.add("hidden-layer");
+    launchGameMode();
+  });
+
+  function launchRankedWaiting() {
     rankedVoteScreen.classList.add("hidden-layer");
-    const quest=QUESTS.find(q=>q.subject===rankedTopic);
-    document.getElementById("ranked-topic-label").textContent=`Topic: ${quest.subject} ${quest.emoji}`;
+    document.getElementById("rw-avatar").textContent = AVATAR_EMOJI[activeProfile.avatar] || "🦄";
+    document.getElementById("rw-name").textContent = activeProfile.nickname || "Player";
+    document.getElementById("ranked-topic-label").textContent = rankedVote
+      ? `Your vote: ${rankedVote}`
+      : "Pick a topic on the previous screen";
 
-    // Build waiting room with mock players + current player
-    const waitingRoom=document.getElementById("waiting-room");
-    waitingRoom.innerHTML="";
-    const allPlayers=[...MOCK_PLAYERS,{nickname:activeProfile.nickname||"You",avatar:activeProfile.avatar}];
-    allPlayers.forEach(p=>{
-      const div=document.createElement("div");
-      div.className="waiting-player";
-      div.innerHTML=`<span class="waiting-avatar">${AVATAR_EMOJI[p.avatar]||"🦄"}</span><span class="waiting-name">${p.nickname}</span><span class="waiting-ready">✓</span>`;
-      waitingRoom.appendChild(div);
-    });
+    renderWaitingRoomMembers(rankedLiveMembers);
+    loadChatHistory("chat-messages");
 
-    // Countdown 5→0 then start
-    let count=5;
-    const countEl=document.getElementById("waiting-timer");
-    countEl.textContent=count;
+    const countEl = document.getElementById("waiting-timer");
+    if (countEl) {
+      countEl.textContent = "—";
+      countEl.dataset.running = "0";
+    }
+    maybeStartLobbyCountdown(rankedLiveMembers.length);
+
     rankedWaitingScreen.classList.remove("hidden-layer");
-
-    const countInterval=setInterval(()=>{
-      count--;
-      countEl.textContent=count;
-      if(count===0){
-        clearInterval(countInterval);
-        rankedWaitingScreen.classList.add("hidden-layer");
-        launchRankedGame();
-      }
-    },1000);
   }
 
-  function launchRankedGame(){
-    const quest=QUESTS.find(q=>q.subject===rankedTopic);
-    rankedSeconds=120; rankedFlips=0; rankedMatchedCount=0;
-    rankedCardOne=rankedCardTwo=null; rankedDisable=false;
+  document.getElementById("chat-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = document.getElementById("chat-input");
+    if (!input) return;
+    await sendChatMessage(activeProfile.nickname || "Player", input.value);
+    input.value = "";
+  });
 
-    document.getElementById("ranked-topic-hud").textContent=`${quest.emoji} ${quest.subject}`;
-    document.getElementById("ranked-flips").textContent=0;
+  document.getElementById("game-chat-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = document.getElementById("game-chat-input");
+    if (!input) return;
+    await sendChatMessage(activeProfile.nickname || "Player", input.value);
+    input.value = "";
+  });
+
+  function launchRankedGame() {
+    const quest = QUESTS.find((q) => q.subject === rankedTopic) || QUESTS[0];
+    rankedSeconds = 120;
+    rankedFlips = 0;
+    rankedMatchedCount = 0;
+    rankedCardOne = rankedCardTwo = null;
+    rankedDisable = false;
+
+    document.getElementById("ranked-topic-hud").textContent = `${quest.emoji} ${quest.subject}`;
+    document.getElementById("ranked-flips").textContent = 0;
     updateRankedTimerDisplay();
 
     rankedGameScreen.classList.remove("hidden-layer");
+    document.getElementById("ranked-game-chat").classList.remove("hidden-layer");
+    loadChatHistory("game-chat-messages");
     animateNavLogo("ranked-logo");
 
-    buildAndShuffleCards(rankedTopic,6,"ranked-cards",true);
-    buildLivePlayersPanel();
+    buildAndShuffleCards(rankedTopic, 6, "ranked-cards", true);
+    buildLivePlayersPanel(rankedLiveMembers);
     startRankedTimer();
   }
 
@@ -912,7 +1458,9 @@ document.addEventListener("DOMContentLoaded", function () {
   function flipRankedCard(e){
     const clicked=e.currentTarget;
     if(clicked===rankedCardOne||rankedDisable) return;
-    rankedFlips++; updateRankedFlipDisplay();
+    rankedFlips++;
+    updateRankedFlipDisplay();
+    if(liveRankedActive) updateMyRoomProgress(rankedMatchedCount,rankedFlips);
     clicked.classList.add("flip");
     if(!rankedCardOne){ rankedCardOne=clicked; return; }
     rankedCardTwo=clicked; rankedDisable=true;
@@ -947,102 +1495,85 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function endRankedGame(completed){
+  async function endRankedGame(completed){
     clearInterval(rankedInterval);
-    livePlayerIntervals.forEach(i=>clearInterval(i));
-    livePlayerIntervals=[];
     const timeTaken=120-rankedSeconds;
-    showRankedResults(completed,timeTaken);
+    const myScore=calcRankedScore(rankedFlips,timeTaken);
+    if (liveRankedActive) {
+      await finishMyRoomResult(rankedFlips, timeTaken, myScore);
+      rankedLiveMembers = await fetchRoomMembers();
+    }
+    showRankedResults(completed,timeTaken,myScore);
   }
 
-  // ----------------------------------------------------------
-  //  LIVE PLAYERS PANEL
-  // ----------------------------------------------------------
-  function buildLivePlayersPanel(){
+  function buildLivePlayersPanel(members){
     const panel=document.getElementById("live-players-panel");
     panel.innerHTML="<div class='live-panel-title'>⚔️ Live Players</div>";
-    livePlayerIntervals.forEach(i=>clearInterval(i));
-    livePlayerIntervals=[];
+    const list=members&&members.length?members:rankedLiveMembers;
+    const uid=getUserId?.()||null;
 
-    const allPlayers=[
-      ...MOCK_PLAYERS,
-      {nickname:activeProfile.nickname||"You",avatar:activeProfile.avatar,isMe:true}
-    ];
-
-    allPlayers.forEach(p=>{
+    list.forEach(m=>{
+      const key=memberKey(m);
+      const isMe=m.user_id===uid;
+      const pairs=m.pairs_matched||0;
+      const pct=(pairs/8)*100;
       const div=document.createElement("div");
-      div.className=`live-player ${p.isMe?"live-player-me":""}`;
-      div.id=`lp-${p.nickname.replace(/\s/g,"")}`;
+      div.className=`live-player ${isMe?"live-player-me":""}`;
+      div.id=`lp-${key.replace(/[^a-zA-Z0-9]/g,"")}`;
       div.innerHTML=`
-        <span class="lp-avatar">${AVATAR_EMOJI[p.avatar]||"🦄"}</span>
+        <span class="lp-avatar">${AVATAR_EMOJI[m.avatar]||"🦄"}</span>
         <div class="lp-info">
-          <span class="lp-name">${p.nickname}${p.isMe?" (You)":""}</span>
-          <div class="lp-bar-track"><div class="lp-bar-fill" id="lpbar-${p.nickname.replace(/\s/g,"")}" style="width:0%"></div></div>
+          <span class="lp-name">${m.display_name}${isMe?" (You)":""}</span>
+          <div class="lp-bar-track"><div class="lp-bar-fill" id="lpbar-${key.replace(/[^a-zA-Z0-9]/g,"")}" style="width:${pct}%"></div></div>
         </div>
-        <span class="lp-pairs" id="lppairs-${p.nickname.replace(/\s/g,"")}">0/8</span>
+        <span class="lp-pairs" id="lppairs-${key.replace(/[^a-zA-Z0-9]/g,"")}">${pairs}/8</span>
       `;
       panel.appendChild(div);
-
-      // Simulate mock player progress
-      if(!p.isMe){
-        let mockPairs=0;
-        const interval=setInterval(()=>{
-          if(mockPairs<8){
-            const chance=Math.random();
-            if(chance>0.4){
-              mockPairs=Math.min(8,mockPairs+1);
-              const pct=(mockPairs/8)*100;
-              const barEl=document.getElementById(`lpbar-${p.nickname.replace(/\s/g,"")}`);
-              const pairsEl=document.getElementById(`lppairs-${p.nickname.replace(/\s/g,"")}`);
-              if(barEl) barEl.style.width=`${pct}%`;
-              if(pairsEl) pairsEl.textContent=`${mockPairs}/8`;
-            }
-          } else { clearInterval(interval); }
-        },Math.floor(Math.random()*3000)+2000);
-        livePlayerIntervals.push(interval);
-      }
     });
   }
 
-  // Update my own progress bar during ranked
   function updateMyLiveProgress(){
+    const uid=getUserId?.();
+    const me=rankedLiveMembers.find(m=>m.user_id===uid);
+    const key=me?memberKey(me):(activeProfile.nickname||"You");
+    const safe=key.replace(/[^a-zA-Z0-9]/g,"");
     const pct=(rankedMatchedCount/8)*100;
-    const barEl=document.getElementById(`lpbar-${(activeProfile.nickname||"You").replace(/\s/g,"")}`);
-    const pairsEl=document.getElementById(`lppairs-${(activeProfile.nickname||"You").replace(/\s/g,"")}`);
+    const barEl=document.getElementById(`lpbar-${safe}`);
+    const pairsEl=document.getElementById(`lppairs-${safe}`);
     if(barEl) barEl.style.width=`${pct}%`;
     if(pairsEl) pairsEl.textContent=`${rankedMatchedCount}/8`;
   }
 
-  // Hook into ranked match count
-  const origCheckMatch=checkMatch;
-
   // ----------------------------------------------------------
   //  RANKED RESULTS
   // ----------------------------------------------------------
-  function showRankedResults(completed,timeTaken){
+  function showRankedResults(completed,timeTaken,myScore){
     rankedGameScreen.classList.add("hidden-layer");
+    document.getElementById("ranked-game-chat")?.classList.add("hidden-layer");
     const quest=QUESTS.find(q=>q.subject===rankedTopic);
-    const myScore=calcRankedScore(rankedFlips,timeTaken);
 
-    // Generate mock results
-    const mockResults=MOCK_PLAYERS.map(p=>({
-      nickname:p.nickname,
-      avatar:p.avatar,
-      flips:Math.floor(Math.random()*20)+8,
-      time:Math.floor(Math.random()*80)+20,
-      get score(){ return calcRankedScore(this.flips,this.time); }
+    const uid=getUserId?.();
+    const allResults=rankedLiveMembers.map(m=>({
+      nickname:m.display_name,
+      avatar:m.avatar,
+      flips:m.flips||0,
+      time:m.time_seconds??999,
+      score:m.score??calcRankedScore(m.flips||0,m.time_seconds||999),
+      isMe:m.user_id===uid
     }));
 
-    const myResult={
-      nickname:activeProfile.nickname||"You",
-      avatar:activeProfile.avatar,
-      flips:rankedFlips,
-      time:timeTaken,
-      score:myScore,
-      isMe:true
-    };
+    if(!allResults.some(r=>r.isMe)){
+      allResults.push({
+        nickname:activeProfile.nickname||"You",
+        avatar:activeProfile.avatar,
+        flips:rankedFlips,
+        time:timeTaken,
+        score:myScore,
+        isMe:true
+      });
+    }
 
-    const allResults=[...mockResults,myResult].sort((a,b)=>a.score-b.score);
+    allResults.sort((a,b)=>a.score-b.score);
     const myRank=allResults.findIndex(r=>r.isMe)+1;
 
     // Update share card
@@ -1073,13 +1604,16 @@ document.addEventListener("DOMContentLoaded", function () {
     rankedResultsScreen.classList.remove("hidden-layer");
   }
 
-  document.getElementById("play-again-ranked-btn").addEventListener("click",()=>{
+  document.getElementById("play-again-ranked-btn").addEventListener("click",async ()=>{
     rankedResultsScreen.classList.add("hidden-layer");
-    launchRankedVote();
+    await leaveCurrentRoom();
+    launchRankedLive();
   });
 
-  document.getElementById("back-to-mode-btn").addEventListener("click",()=>{
+  document.getElementById("back-to-mode-btn").addEventListener("click",async ()=>{
     rankedResultsScreen.classList.add("hidden-layer");
+    await leaveCurrentRoom();
+    liveRankedActive=false;
     exitToHub();
   });
 
@@ -1337,7 +1871,7 @@ document.addEventListener("DOMContentLoaded", function () {
       rankedLockModal.classList.add("active");
       return;
     }
-    launchRankedVote();
+    launchRankedLive();
   });
 
   // ----------------------------------------------------------
@@ -1369,6 +1903,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     return arr;
   }
+
+  function seededShuffleArray(arr,seed){
+    let s=Number(seed)||1;
+    const rand=()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; };
+    for(let i=arr.length-1;i>0;i--){
+      const j=Math.floor(rand()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
   function animateNavLogo(id){
     const link=document.getElementById(id);
     if(!link||link.dataset.animated) return;
@@ -1392,51 +1936,24 @@ document.addEventListener("DOMContentLoaded", function () {
   const authBtn=document.getElementById("auth-btn");
   const authModal=document.getElementById("auth-modal");
   const closeModalBtn=document.getElementById("close-modal-btn");
-  const authForm=document.getElementById("auth-form");
-  const switchMode=document.getElementById("switch-auth-mode");
-  const modalTitle=document.getElementById("modal-title");
-  const modalSubtitle=document.getElementById("modal-subtitle");
-  const submitAuthBtn=document.getElementById("submit-auth-btn");
-  const usernameWrapper=document.getElementById("username-wrapper");
-  let isSignUpMode=true;
+  const authGoogleBtn=document.getElementById("auth-google-btn");
+  const authSkipBtn=document.getElementById("auth-skip-btn");
 
   if(authBtn) authBtn.addEventListener("click",()=>{ if(isLoggedIn){ launchProfileScreen(); } else { authModal.classList.add("active"); } });
   if(closeModalBtn) closeModalBtn.addEventListener("click",()=>authModal.classList.remove("active"));
   if(authModal) authModal.addEventListener("click",e=>{ if(e.target===authModal) authModal.classList.remove("active"); });
 
-  if(switchMode){
-    switchMode.addEventListener("click",e=>{
-      e.preventDefault(); isSignUpMode=!isSignUpMode;
-      const usernameInput=document.getElementById("auth-username");
-      if(isSignUpMode){
-        modalTitle.textContent="Create Account";
-        modalSubtitle.textContent="Join retentiOoo to save your high scores!";
-        submitAuthBtn.textContent="Sign Up"; switchMode.textContent="Log In";
-        usernameWrapper.style.display="flex";
-        if(usernameInput) usernameInput.required=true;
-      } else {
-        modalTitle.textContent="Welcome Back";
-        modalSubtitle.textContent="Log in to check your personal stats.";
-        submitAuthBtn.textContent="Log In"; switchMode.textContent="Sign Up";
-        usernameWrapper.style.display="none";
-        if(usernameInput) usernameInput.required=false;
-      }
+  if (authGoogleBtn) {
+    authGoogleBtn.addEventListener("click", () => {
+      authModal.classList.remove("active");
+      startGoogleSignIn();
     });
   }
 
-  if(authForm){
-    authForm.addEventListener("submit",e=>{
-      e.preventDefault();
-      const username=document.getElementById("auth-username").value;
-      isLoggedIn=true;
-      activeProfile.isLoggedIn=true;
-      activeProfile.isGuest=false;
-      if(username) activeProfile.nickname=username;
-      saveProfile();
-      updateRankedModeUI();
-      if(authBtn) authBtn.textContent=username||activeProfile.nickname||"Account";
+  if (authSkipBtn) {
+    authSkipBtn.addEventListener("click", () => {
       authModal.classList.remove("active");
-      authForm.reset();
+      completeGateSkip();
     });
   }
 

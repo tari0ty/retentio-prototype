@@ -218,6 +218,305 @@ body {
   line-height: 1.5;
 }
 
+.gate-btn-google {
+  background: var(--white);
+  color: var(--text-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.gate-btn-google:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.google-logo {
+  flex-shrink: 0;
+}
+
+.gate-btn-google,
+.auth-google-full {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.auth-modal-card {
+  text-align: center;
+  max-width: 360px;
+}
+
+.auth-google-full,
+.auth-skip-full {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 10px;
+}
+
+.auth-modal-hint {
+  font-size: 0.78rem;
+  color: var(--text-mid);
+  margin-top: 14px;
+  line-height: 1.45;
+}
+
+.friends-hint {
+  color: rgba(255,255,255,0.9);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.friends-code-card,
+.friends-add-card {
+  background: var(--white);
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--hard-sm);
+}
+
+.friends-code-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text-mid);
+  margin-bottom: 8px;
+}
+
+.friends-code-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.friends-code-val {
+  flex: 1;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--purple-dark);
+  padding: 8px 0;
+}
+
+.friends-add-card label {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.friends-add-card input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-main);
+  text-transform: uppercase;
+}
+
+.friends-msg {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 8px;
+  min-height: 1.2em;
+}
+
+.friends-msg.ok { color: #1a6b3c; }
+.friends-msg.err { color: #9b1c1c; }
+
+.friends-list-title { margin-top: 8px; }
+
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-md);
+  box-shadow: var(--hard-sm);
+}
+
+.friend-row-emoji { font-size: 1.8rem; }
+.friend-row-info { flex: 1; }
+.friend-row-name {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--text-dark);
+}
+.friend-row-code {
+  font-size: 0.78rem;
+  color: var(--text-mid);
+  font-weight: 600;
+}
+
+.friends-guest-note {
+  text-align: center;
+  color: rgba(255,255,255,0.85);
+  padding: 20px;
+}
+
+.friends-empty {
+  text-align: center;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
+  padding: 16px;
+}
+
+.gate-config-warning {
+  font-size: 0.8rem;
+  color: #fff3cd;
+  background: rgba(0,0,0,0.2);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  max-width: 300px;
+  line-height: 1.45;
+}
+
+.gate-config-warning code {
+  font-size: 0.85em;
+  color: #fff;
+}
+
+.hub-schema-banner {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: #fff3cd;
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  line-height: 1.45;
+}
+
+.cloud-save-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000001;
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: 3px solid var(--text-dark);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9rem;
+  box-shadow: var(--hard-md);
+}
+
+.cloud-save-toast.toast-saving { background: #e8e6ff; color: var(--purple-dark); }
+.cloud-save-toast.toast-saved   { background: #d4f8e8; color: #1a6b3c; }
+.cloud-save-toast.toast-error   { background: #ffe0e0; color: #9b1c1c; }
+
+.ranked-live-status {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.ranked-lobby-wide { max-width: 560px; }
+
+.ranked-lobby-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .ranked-lobby-grid { grid-template-columns: 1fr; }
+}
+
+.lobby-col-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.chat-messages {
+  height: 200px;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.chat-messages-compact { height: 120px; }
+
+.chat-line { margin-bottom: 6px; word-break: break-word; }
+.chat-line .chat-time { color: var(--text-mid); font-size: 0.75rem; }
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-main);
+}
+
+.chat-send-btn {
+  padding: 10px 14px;
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-sm);
+  background: var(--purple);
+  color: var(--white);
+  font-family: var(--font-display);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ranked-game-chat {
+  width: 100%;
+  max-width: 280px;
+  padding: 8px;
+  background: rgba(255,255,255,0.12);
+  border-radius: var(--radius-md);
+}
+
+.hub-signout-btn {
+  padding: 8px 12px;
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.9);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.75rem;
+  cursor: pointer;
+  box-shadow: var(--hard-sm);
+  color: var(--text-dark);
+}
+
+.ranked-lock-google { width: 100%; margin-bottom: 10px; }
+
 /* ============================================================
    GAMES HUB
 ============================================================ */
