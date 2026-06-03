@@ -124,7 +124,7 @@
           <button type="button" class="back-btn" id="copy-friend-code-btn">Copy</button>
         </div>
       </div>
-      <div class="friends-add-card">
+      <div class="friends-add-card hidden-layer">
         <label for="add-friend-code-input">Add friend by code</label>
         <div class="friends-code-row">
           <input type="text" id="add-friend-code-input" maxlength="12" placeholder="e.g. A1B2C3D4" autocomplete="off">
@@ -345,10 +345,10 @@
         <button class="back-btn" id="back-from-vote">← Back</button>
         <div class="player-badge"><span id="rv-avatar">🦄</span> <span id="rv-name">Player</span></div>
       </div>
-      <h2 class="map-title">Vote for a Topic!</h2>
-      <p class="ranked-subtitle">Live lobby — vote with real players (up to 10).</p>
+      <h2 class="map-title">Match Setup</h2>
+      <p class="ranked-subtitle">Adjust settings and confirm to join the lobby.</p>
       <p class="ranked-live-status" id="ranked-live-status"></p>
-      <div class="vote-grid" id="vote-grid"></div>
+      <div class="vote-grid hidden-layer" id="vote-grid"></div>
       <div class="vote-settings-card">
         <label class="vote-slider-row">
           <span>Tiles <strong id="vote-tiles-value">16</strong></span>

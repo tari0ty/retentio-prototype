@@ -5,6 +5,10 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text,
   avatar text not null default 'unicorn',
+  profile_pic_url text,
+  email text,
+  email_visible boolean not null default false,
+  profile_public boolean not null default true,
   progress jsonb not null default '{}'::jsonb,
   platform_streak integer not null default 1,
   last_streak_date date,
@@ -37,7 +41,7 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, display_name, avatar)
+  insert into public.profiles (id, display_name, avatar, email)
   values (
     new.id,
     coalesce(
@@ -45,7 +49,8 @@ begin
       new.raw_user_meta_data->>'name',
       split_part(new.email, '@', 1)
     ),
-    'unicorn'
+    'unicorn',
+    new.email
   )
   on conflict (id) do nothing;
   return new;

@@ -14,6 +14,7 @@ import {
   checkProfilesReady,
   getUserId,
   getUserEmail,
+  getSupabase,
 } from "./js/auth.js";
 import {
   checkMultiplayerReady,
@@ -43,6 +44,7 @@ import {
   subscribeToFriendMessages,
   unsubscribeFromFriendMessages,
   checkFriendsReady,
+  addFriendById,
 } from "./js/friends.js";
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -350,6 +352,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!activeProfile.unlockedLevels) activeProfile.unlockedLevels = {1:1,2:1,3:1,4:1,5:1};
     if (!activeProfile.bestStats) activeProfile.bestStats = {};
     if (!activeProfile.bestScores) activeProfile.bestScores = {};
+    if (activeProfile.profilePicUrl == null) activeProfile.profilePicUrl = "";
     if (activeProfile.emailVisible == null) activeProfile.emailVisible = false;
     if (activeProfile.profilePublic == null) activeProfile.profilePublic = true;
 
@@ -1179,6 +1182,45 @@ document.addEventListener("DOMContentLoaded", function () {
   // ----------------------------------------------------------
   //  PHASE 3 — QUIZ
   // ----------------------------------------------------------
+  function finishOnboardingProfile({ avatar = "", profilePicUrl = "" } = {}) {
+    const nickname = document.getElementById("quiz-nickname").value.trim();
+    const errorEl = document.getElementById("nickname-error");
+    if (!nickname) {
+      errorEl.classList.remove("hidden-layer");
+      document.getElementById("quiz-nickname").focus();
+      return false;
+    }
+    errorEl.classList.add("hidden-layer");
+    activeProfile.nickname = nickname;
+    if (avatar) activeProfile.avatar = avatar;
+    if (profilePicUrl) activeProfile.profilePicUrl = profilePicUrl;
+    if (!activeProfile.avatar) activeProfile.avatar = "unicorn";
+    if (isAuthenticated()) {
+      activeProfile.isLoggedIn = true;
+      activeProfile.isGuest = false;
+    }
+    saveProfile();
+    quizScreen.classList.add("hidden-layer");
+    if (quizReturnTo === "matchbox") launchGameMode();
+    else launchHub();
+    return true;
+  }
+
+  async function finishOnboardingWithPhoto(input) {
+    try {
+      const profilePicUrl = await readImageFile(input.files?.[0]);
+      if (profilePicUrl) finishOnboardingProfile({ profilePicUrl });
+    } catch (err) {
+      alert(err.message || "Could not use that photo.");
+    } finally {
+      if (input) input.value = "";
+    }
+  }
+
+  document.getElementById("quiz-photo-gallery")?.addEventListener("change", (e) => finishOnboardingWithPhoto(e.target));
+  document.getElementById("quiz-photo-camera")?.addEventListener("change", (e) => finishOnboardingWithPhoto(e.target));
+  document.getElementById("quiz-photo-skip")?.addEventListener("click", () => finishOnboardingProfile({ avatar: "unicorn" }));
+
   document.querySelectorAll(".avatar-card").forEach(btn=>{
     btn.addEventListener("click",function(){
       const nickname=document.getElementById("quiz-nickname").value.trim();
@@ -1207,6 +1249,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const avatar=AVATAR_EMOJI[activeProfile.avatar]||"🦄";
     const nickname=activeProfile.nickname||"Player";
     document.getElementById("gm-avatar").textContent=avatar;
+    renderProfileImage(document.getElementById("gm-avatar"), activeProfile, "Profile");
     document.getElementById("gm-playername").textContent=nickname;
     const authBtn=document.getElementById("auth-btn");
     if(authBtn) authBtn.textContent=isLoggedIn?nickname:"Sign Up";
@@ -1344,8 +1387,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function buildAndShuffleCards(subject,level,gridId,isRanked){
     const cardGrid=document.getElementById(gridId);
     const allImages=TOPIC_IMAGES[subject]||TOPIC_IMAGES["Animals"];
-    const pairCount=isRanked?8:(LEVEL_CONFIG[level]||LEVEL_CONFIG[1]).pairs;
-    const cols=isRanked?4:(LEVEL_CONFIG[level]||LEVEL_CONFIG[1]).cols;
+    const pairCount=isRanked?rankedSettings.pairs:(LEVEL_CONFIG[level]||LEVEL_CONFIG[1]).pairs;
+    const cols=isRanked?(pairCount === 3 ? 3 : pairCount === 5 ? 5 : 4):(LEVEL_CONFIG[level]||LEVEL_CONFIG[1]).cols;
 
     if(!isRanked){
       cardOne=cardTwo=null; disableDeck=false;
@@ -1411,7 +1454,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (liveRankedActive) {
           updateMyRoomProgress(rankedMatchedCount, rankedFlips);
         }
-        if(rankedMatchedCount===8) endRankedGame(true);
+        if(rankedMatchedCount===rankedSettings.pairs) endRankedGame(true);
       } else {
         cardOne=cardTwo=null; disableDeck=false;
         if(matchedCount===totalPairs){ stopTimer(); setTimeout(()=>showWinModal(),600); }
@@ -1437,12 +1480,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const voteResults = document.getElementById("vote-results");
     if (!voteResults) return;
     voteResults.innerHTML = "";
+    const topicVotes = votes?.topics || votes || {};
     const sorted = QUESTS.slice().sort(
-      (a, b) => (votes[b.subject] || 0) - (votes[a.subject] || 0)
+      (a, b) => (topicVotes[b.subject] || 0) - (topicVotes[a.subject] || 0)
     );
-    const total = Object.values(votes || {}).reduce((a, b) => a + b, 0) || 1;
+    const total = Object.values(topicVotes || {}).reduce((a, b) => a + Number(b || 0), 0) || 1;
     sorted.forEach((q) => {
-      const pct = Math.round(((votes[q.subject] || 0) / total) * 100);
+      const pct = Math.round(((topicVotes[q.subject] || 0) / total) * 100);
       const bar = document.createElement("div");
       bar.className = "vote-bar-row";
       bar.innerHTML = `
@@ -1452,6 +1496,11 @@ document.addEventListener("DOMContentLoaded", function () {
       `;
       voteResults.appendChild(bar);
     });
+    const settings = settingsFromRoom({ votes });
+    const summary = document.createElement("div");
+    summary.className = "vote-settings-summary";
+    summary.textContent = `Average setup: ${settings.tiles} tiles · ${settings.timeLimit}s · ${settings.maxFlips} flips`;
+    voteResults.appendChild(summary);
   }
 
   function renderWaitingRoomMembers(members) {
@@ -1463,6 +1512,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const div = document.createElement("div");
       div.className = "waiting-player";
       div.innerHTML = `<span class="waiting-avatar">${AVATAR_EMOJI[m.avatar] || "🦄"}</span><span class="waiting-name">${m.display_name}</span><span class="waiting-ready">✓</span>`;
+      renderProfileImage(div.querySelector(".waiting-avatar"), m, "Profile");
       waitingRoom.appendChild(div);
     });
     if (countEl) {
@@ -1516,6 +1566,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (room.status === "playing") {
           clearInterval(rankedCountdownTimer);
           rankedTopic = room.topic || "Animals";
+          rankedSettings = settingsFromRoom(room);
           rankedBoardSeed = room.board_seed;
           if (rankedGameScreen.classList.contains("hidden-layer")) {
             rankedWaitingScreen.classList.add("hidden-layer");
@@ -1592,7 +1643,8 @@ document.addEventListener("DOMContentLoaded", function () {
       clearInterval(rankedCountdownTimer);
       await joinOrCreateLobby(
         activeProfile.nickname || "Player",
-        activeProfile.avatar || "unicorn"
+        activeProfile.avatar || "unicorn",
+        activeProfile.profilePicUrl || ""
       );
       setupRankedRealtimeHandlers();
       const room = await fetchRoom();
@@ -1616,6 +1668,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updateAppNavbar(true);
     document.getElementById("rv-avatar").textContent = AVATAR_EMOJI[activeProfile.avatar] || "🦄";
     document.getElementById("rv-name").textContent = activeProfile.nickname || "Player";
+    renderProfileImage(document.getElementById("rv-avatar"), activeProfile, "Profile");
 
     const voteGrid = document.getElementById("vote-grid");
     const voteResults = document.getElementById("vote-results");
@@ -1623,36 +1676,48 @@ document.addEventListener("DOMContentLoaded", function () {
     const statusEl = document.getElementById("ranked-live-status");
     voteGrid.innerHTML = "";
     voteResults.innerHTML = "";
-    rankedVote = "";
+    
+    // Default topic to 'Animals' since topic voting is removed
+    rankedVote = "Animals";
+    updateVoteSliderLabels();
+    
+    // Setup slider listeners with clone to avoid duplicate bindings
+    ["vote-tiles-slider", "vote-time-slider", "vote-flips-slider"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        const newEl = el.cloneNode(true);
+        el.parentNode.replaceChild(newEl, el);
+        
+        newEl.addEventListener("input", updateVoteSliderLabels);
+        newEl.addEventListener("change", async () => {
+          try {
+            await castVote({ subject: rankedVote, ...getVoteSliderValues() });
+            const room = await fetchRoom();
+            renderVoteResultsFromVotes(room?.votes || {});
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      }
+    });
 
     if (statusEl) {
       statusEl.textContent = `Live · ${rankedLiveMembers.length} player(s) in lobby`;
     }
 
-    QUESTS.forEach((quest) => {
-      const btn = document.createElement("button");
-      btn.className = "vote-card";
-      btn.dataset.subject = quest.subject;
-      btn.innerHTML = `<span class="vote-emoji">${quest.emoji}</span><span class="vote-label">${quest.subject}</span>`;
-      btn.addEventListener("click", async () => {
-        document.querySelectorAll(".vote-card").forEach((b) => b.classList.remove("vote-selected"));
-        btn.classList.add("vote-selected");
-        rankedVote = quest.subject;
-        confirmBtn.classList.remove("hidden-layer");
-        try {
-          await castVote(quest.subject);
-          const room = await fetchRoom();
-          renderVoteResultsFromVotes(room?.votes || {});
-        } catch (err) {
-          console.error(err);
-        }
-      });
-      voteGrid.appendChild(btn);
-    });
+    // Cast the initial vote with current slider settings
+    castVote({ subject: rankedVote, ...getVoteSliderValues() }).then(async () => {
+      const room = await fetchRoom();
+      renderVoteResultsFromVotes(room?.votes || {});
+    }).catch(console.error);
+
+    // Show confirm button immediately
+    confirmBtn.classList.remove("hidden-layer");
 
     const onConfirm = () => {
       rankedVoteConfirmed = true;
       rankedTopic = rankedVote || "Animals";
+      rankedSettings = settingsFromRoom({ votes: { settings: [getVoteSliderValues()] } });
       launchRankedWaiting();
     };
     const newConfirm = confirmBtn.cloneNode(true);
@@ -1681,6 +1746,7 @@ document.addEventListener("DOMContentLoaded", function () {
     rankedVoteScreen.classList.add("hidden-layer");
     document.getElementById("rw-avatar").textContent = AVATAR_EMOJI[activeProfile.avatar] || "🦄";
     document.getElementById("rw-name").textContent = activeProfile.nickname || "Player";
+    renderProfileImage(document.getElementById("rw-avatar"), activeProfile, "Profile");
     document.getElementById("ranked-topic-label").textContent = rankedVote
       ? `Your vote: ${rankedVote}`
       : "Pick a topic on the previous screen";
@@ -1720,7 +1786,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function launchRankedGame() {
     updateAppNavbar(false);
     const quest = QUESTS.find((q) => q.subject === rankedTopic) || QUESTS[0];
-    rankedSeconds = 120;
+    rankedSeconds = rankedSettings.timeLimit;
     rankedFlips = 0;
     rankedMatchedCount = 0;
     rankedCardOne = rankedCardTwo = null;
@@ -1736,7 +1802,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updateChatStreakUI();
     animateNavLogo("ranked-logo");
 
-    buildAndShuffleCards(rankedTopic, 6, "ranked-cards", true);
+    buildAndShuffleCards(rankedTopic, rankedSettings.pairs, "ranked-cards", true);
     buildLivePlayersPanel(rankedLiveMembers);
     startRankedTimer();
   }
@@ -1749,6 +1815,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if(clicked===rankedCardOne||rankedDisable) return;
     rankedFlips++;
     updateRankedFlipDisplay();
+    if (rankedFlips >= rankedSettings.maxFlips) {
+      endRankedGame(false);
+      return;
+    }
     if(liveRankedActive) updateMyRoomProgress(rankedMatchedCount,rankedFlips);
     clicked.classList.add("flip");
     if(!rankedCardOne){ rankedCardOne=clicked; return; }
@@ -1786,7 +1856,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function endRankedGame(completed){
     clearInterval(rankedInterval);
-    const timeTaken=120-rankedSeconds;
+    const timeTaken=rankedSettings.timeLimit-rankedSeconds;
     const myScore=calcRankedScore(rankedFlips,timeTaken);
     if (!activeProfile.bestScores) activeProfile.bestScores = {};
     const rankedBest = activeProfile.bestScores.ranked;
@@ -1800,10 +1870,10 @@ document.addEventListener("DOMContentLoaded", function () {
       saveProfile();
     }
     if (liveRankedActive) {
-      await finishMyRoomResult(rankedFlips, timeTaken, myScore);
+      await finishMyRoomResult(rankedFlips, timeTaken, myScore, rankedMatchedCount);
       rankedLiveMembers = await fetchRoomMembers();
     }
-    showRankedResults(completed,timeTaken,myScore);
+    await showRankedResults(completed,timeTaken,myScore);
   }
 
   function buildLivePlayersPanel(members){
@@ -1816,7 +1886,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const key=memberKey(m);
       const isMe=m.user_id===uid;
       const pairs=m.pairs_matched||0;
-      const pct=(pairs/8)*100;
+      const pct=(pairs/rankedSettings.pairs)*100;
       const div=document.createElement("div");
       div.className=`live-player ${isMe?"live-player-me":""}`;
       div.id=`lp-${key.replace(/[^a-zA-Z0-9]/g,"")}`;
@@ -1826,8 +1896,9 @@ document.addEventListener("DOMContentLoaded", function () {
           <span class="lp-name">${m.display_name}${isMe?" (You)":""}</span>
           <div class="lp-bar-track"><div class="lp-bar-fill" id="lpbar-${key.replace(/[^a-zA-Z0-9]/g,"")}" style="width:${pct}%"></div></div>
         </div>
-        <span class="lp-pairs" id="lppairs-${key.replace(/[^a-zA-Z0-9]/g,"")}">${pairs}/8</span>
+        <span class="lp-pairs" id="lppairs-${key.replace(/[^a-zA-Z0-9]/g,"")}">${pairs}/${rankedSettings.pairs}</span>
       `;
+      renderProfileImage(div.querySelector(".lp-avatar"), m, "Profile");
       panel.appendChild(div);
     });
   }
@@ -1837,39 +1908,43 @@ document.addEventListener("DOMContentLoaded", function () {
     const me=rankedLiveMembers.find(m=>m.user_id===uid);
     const key=me?memberKey(me):(activeProfile.nickname||"You");
     const safe=key.replace(/[^a-zA-Z0-9]/g,"");
-    const pct=(rankedMatchedCount/8)*100;
+    const pct=(rankedMatchedCount/rankedSettings.pairs)*100;
     const barEl=document.getElementById(`lpbar-${safe}`);
     const pairsEl=document.getElementById(`lppairs-${safe}`);
     if(barEl) barEl.style.width=`${pct}%`;
-    if(pairsEl) pairsEl.textContent=`${rankedMatchedCount}/8`;
+    if(pairsEl) pairsEl.textContent=`${rankedMatchedCount}/${rankedSettings.pairs}`;
   }
 
   // ----------------------------------------------------------
   //  RANKED RESULTS
   // ----------------------------------------------------------
-  function showRankedResults(completed,timeTaken,myScore){
+  async function showRankedResults(completed,timeTaken,myScore){
     rankedGameScreen.classList.add("hidden-layer");
     document.getElementById("ranked-game-chat")?.classList.add("hidden-layer");
-    const quest=QUESTS.find(q=>q.subject===rankedTopic);
+    const quest=QUESTS.find(q=>q.subject===rankedTopic) || QUESTS[0];
 
     const uid=getUserId?.();
     const allResults=rankedLiveMembers.map(m=>({
       nickname:m.display_name,
       avatar:m.avatar,
+      profilePicUrl:m.profile_pic_url,
       flips:m.flips||0,
       time:m.time_seconds??999,
       score:m.score??calcRankedScore(m.flips||0,m.time_seconds||999),
-      isMe:m.user_id===uid
+      isMe:m.user_id===uid,
+      userId:m.user_id
     }));
 
     if(!allResults.some(r=>r.isMe)){
       allResults.push({
         nickname:activeProfile.nickname||"You",
         avatar:activeProfile.avatar,
+        profilePicUrl:activeProfile.profilePicUrl,
         flips:rankedFlips,
         time:timeTaken,
         score:myScore,
-        isMe:true
+        isMe:true,
+        userId:uid
       });
     }
 
@@ -1883,6 +1958,26 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("rs-time").textContent=formatTime(timeTaken);
     document.getElementById("rs-score").textContent=myScore;
 
+    // Fetch friendships to see if we can add any of these players
+    const sb = getSupabase ? getSupabase() : null;
+    const friendStatusMap = new Map();
+    if (sb && uid) {
+      try {
+        const { data: relations } = await sb
+          .from("friendships")
+          .select("user_id, friend_id, status")
+          .or(`user_id.eq.${uid},friend_id.eq.${uid}`);
+        if (relations) {
+          relations.forEach(r => {
+            const targetId = r.user_id === uid ? r.friend_id : r.user_id;
+            friendStatusMap.set(targetId, r.status);
+          });
+        }
+      } catch (err) {
+        console.error("Error loading friendships for results screen:", err);
+      }
+    }
+
     // Build results list
     const list=document.getElementById("ranked-results-list");
     list.innerHTML="";
@@ -1890,14 +1985,47 @@ document.addEventListener("DOMContentLoaded", function () {
       const row=document.createElement("div");
       row.className=`ranked-result-row ${r.isMe?"ranked-result-me":""}`;
       const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`;
+      
+      let friendHtml = "";
+      if (!r.isMe && uid && r.userId) {
+        const status = friendStatusMap.get(r.userId);
+        if (status === "accepted") {
+          friendHtml = `<span class="rr-friend-status">👥 Friend</span>`;
+        } else if (status === "pending") {
+          friendHtml = `<span class="rr-friend-status">✉️ Requested</span>`;
+        } else {
+          friendHtml = `<button type="button" class="rr-friend-btn" data-user-id="${r.userId}">Add Friend</button>`;
+        }
+      }
+
       row.innerHTML=`
         <span class="rr-rank">${medal}</span>
         <span class="rr-avatar">${AVATAR_EMOJI[r.avatar]||"🦄"}</span>
-        <span class="rr-name">${r.nickname}${r.isMe?" (You)":""}</span>
+        <span class="rr-name">${r.nickname}${r.isMe?" (You)":""}${friendHtml}</span>
         <span class="rr-flips">${r.flips} flips</span>
         <span class="rr-time">${formatTime(r.time)}</span>
         <span class="rr-score">${r.score}</span>
       `;
+      renderProfileImage(row.querySelector(".rr-avatar"), r, "Profile");
+      
+      const btn = row.querySelector(".rr-friend-btn");
+      if (btn) {
+        btn.addEventListener("click", async () => {
+          const targetId = btn.dataset.userId;
+          btn.disabled = true;
+          btn.textContent = "Sending...";
+          try {
+            await addFriendById(targetId);
+            btn.outerHTML = `<span class="rr-friend-status">✉️ Requested</span>`;
+          } catch (err) {
+            console.error(err);
+            alert("Could not send friend request: " + (err.message || err));
+            btn.disabled = false;
+            btn.textContent = "Add Friend";
+          }
+        });
+      }
+
       list.appendChild(row);
     });
 
@@ -2046,7 +2174,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const avatar=AVATAR_EMOJI[activeProfile.avatar]||"🦄";
     const nickname=activeProfile.nickname||"Player";
     document.getElementById("profile-avatar").textContent=avatar;
+    renderProfileImage(document.getElementById("profile-avatar"), activeProfile, "Profile");
     document.getElementById("profile-name").textContent=nickname;
+    const emailRow = document.getElementById("profile-email-row");
+    if (emailRow) {
+      const email = getUserEmail();
+      emailRow.textContent = email ? `Google email: ${email}` : "";
+    }
+    const publicToggle = document.getElementById("profile-public-toggle");
+    const emailToggle = document.getElementById("profile-email-visible-toggle");
+    if (publicToggle) publicToggle.checked = activeProfile.profilePublic !== false;
+    if (emailToggle) emailToggle.checked = !!activeProfile.emailVisible;
     document.getElementById("profile-badge").textContent=`Matchbox · Level ${activeProfile.currentLevel || 1}`;
 
     const allPlayers=getPlaceholderPlayers();
@@ -2139,6 +2277,22 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("back-from-profile").addEventListener("click",()=>{
     profileScreen.classList.add("hidden-layer");
     launchHub();
+  });
+
+  document.getElementById("profile-photo-gallery")?.addEventListener("change", (e) => setProfilePhotoFromInput(e.target));
+  document.getElementById("profile-photo-camera")?.addEventListener("change", (e) => setProfilePhotoFromInput(e.target));
+  document.getElementById("profile-photo-skip-btn")?.addEventListener("click", () => {
+    activeProfile.profilePicUrl = "";
+    saveProfile();
+    renderProfileImage(document.getElementById("profile-avatar"), activeProfile, "Profile");
+  });
+  document.getElementById("profile-public-toggle")?.addEventListener("change", (e) => {
+    activeProfile.profilePublic = e.target.checked;
+    saveProfile();
+  });
+  document.getElementById("profile-email-visible-toggle")?.addEventListener("change", (e) => {
+    activeProfile.emailVisible = e.target.checked;
+    saveProfile();
   });
 
   // ----------------------------------------------------------

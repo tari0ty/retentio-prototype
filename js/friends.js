@@ -229,6 +229,40 @@ export function unsubscribeFromFriendMessages() {
   friendMessagesChannel = null;
 }
 
+export async function addFriendById(friendUserId) {
+  const sb = getSupabase();
+  const uid = getUserId();
+  if (!sb || !uid) throw new Error("Sign in to add friends.");
+
+  const { data: existingA } = await sb
+    .from("friendships")
+    .select("id, status")
+    .eq("user_id", uid)
+    .eq("friend_id", friendUserId)
+    .maybeSingle();
+  const { data: existingB } = await sb
+    .from("friendships")
+    .select("id, status")
+    .eq("user_id", friendUserId)
+    .eq("friend_id", uid)
+    .maybeSingle();
+  if (existingA || existingB) {
+    const existing = existingA || existingB;
+    throw new Error(
+      existing.status === "pending"
+        ? "Friend request is already pending."
+        : "Already friends."
+    );
+  }
+
+  const { error: insErr } = await sb.from("friendships").insert({
+    user_id: uid,
+    friend_id: friendUserId,
+    status: "pending",
+  });
+  if (insErr) throw insErr;
+}
+
 export async function checkFriendsReady() {
   if (!isAuthenticated()) return { ok: false, reason: "auth" };
   const sb = getSupabase();

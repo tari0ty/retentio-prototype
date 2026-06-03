@@ -9,9 +9,12 @@ create table if not exists public.rooms (
   status text not null default 'lobby'
     check (status in ('lobby', 'playing', 'finished')),
   topic text,
+  tile_count integer not null default 16,
+  time_limit integer not null default 120,
+  max_flips integer not null default 40,
   board_seed bigint,
   votes jsonb not null default '{}'::jsonb,
-  max_players integer not null default 10,
+  max_players integer not null default 2,
   match_starts_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -21,6 +24,7 @@ create table if not exists public.room_members (
   user_id uuid not null references auth.users (id) on delete cascade,
   display_name text not null,
   avatar text not null default 'unicorn',
+  profile_pic_url text,
   pairs_matched integer not null default 0,
   flips integer not null default 0,
   time_seconds integer,
@@ -41,6 +45,17 @@ create table if not exists public.chat_messages (
 
 create index if not exists room_members_room_id_idx on public.room_members (room_id);
 create index if not exists chat_messages_room_id_created_idx on public.chat_messages (room_id, created_at);
+
+alter table public.rooms
+  add column if not exists tile_count integer not null default 16,
+  add column if not exists time_limit integer not null default 120,
+  add column if not exists max_flips integer not null default 40;
+
+alter table public.rooms
+  alter column max_players set default 2;
+
+alter table public.room_members
+  add column if not exists profile_pic_url text;
 
 -- ---------------------------------------------------------------------------
 -- RLS helpers (avoids infinite recursion on room_members)
@@ -123,7 +138,7 @@ as $$
   select coalesce(
     (
       select key
-      from jsonb_each_text(coalesce(votes, '{}'::jsonb)) as t(key, value)
+      from jsonb_each_text(coalesce(votes->'topics', votes, '{}'::jsonb)) as t(key, value)
       order by (value::integer) desc, key asc
       limit 1
     ),
@@ -140,18 +155,46 @@ as $$
 declare
   r public.rooms;
   member_count integer;
+  settings jsonb;
+  settings_count integer;
+  avg_tiles integer := 16;
+  avg_time integer := 120;
+  avg_flips integer := 40;
 begin
   select count(*)::integer into member_count
   from public.room_members where room_id = p_room_id;
 
-  if member_count < 1 then
-    raise exception 'No players in room';
+  if member_count < 2 then
+    raise exception 'Need two players in room';
+  end if;
+
+  select * into r
+  from public.rooms
+  where id = p_room_id and status = 'lobby';
+
+  if r.id is null then
+    return null;
+  end if;
+
+  settings := coalesce(r.votes->'settings', '[]'::jsonb);
+  select count(*)::integer into settings_count from jsonb_array_elements(settings);
+  if settings_count > 0 then
+    select
+      greatest(6, least(16, round(avg((value->>'tiles')::numeric))::integer)),
+      greatest(60, least(180, round(avg((value->>'timeLimit')::numeric))::integer)),
+      greatest(12, least(60, round(avg((value->>'maxFlips')::numeric))::integer))
+    into avg_tiles, avg_time, avg_flips
+    from jsonb_array_elements(settings);
+    avg_tiles := (avg_tiles / 2) * 2;
   end if;
 
   update public.rooms
   set
     status = 'playing',
     topic = pick_topic_from_votes(votes),
+    tile_count = avg_tiles,
+    time_limit = avg_time,
+    max_flips = avg_flips,
     board_seed = (extract(epoch from now()) * 1000)::bigint,
     match_starts_at = now()
   where id = p_room_id and status = 'lobby'

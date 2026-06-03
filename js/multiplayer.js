@@ -1,6 +1,6 @@
 import { getSupabase, getUserId, isAuthenticated } from "./auth.js";
 
-const MAX_ROOM_PLAYERS = 10;
+const MAX_ROOM_PLAYERS = 2;
 const MIN_PLAYERS_TO_START = 2;
 
 let currentRoomId = null;
@@ -50,7 +50,7 @@ function teardownChannels() {
   roomChannel = membersChannel = chatChannel = null;
 }
 
-export async function joinOrCreateLobby(displayName, avatar) {
+export async function joinOrCreateLobby(displayName, avatar, profilePicUrl = "") {
   const sb = getSupabase();
   const uid = getUserId();
   if (!sb || !uid) throw new Error("Sign in required for live Ranked.");
@@ -95,6 +95,7 @@ export async function joinOrCreateLobby(displayName, avatar) {
       user_id: uid,
       display_name: displayName,
       avatar: avatar || "unicorn",
+      profile_pic_url: profilePicUrl || null,
       pairs_matched: 0,
       flips: 0,
       finished: false,
@@ -140,13 +141,39 @@ export async function fetchChatMessages(limit = 80) {
   return data || [];
 }
 
-export async function castVote(subject) {
+export async function castVote(vote) {
   const sb = getSupabase();
-  if (!sb || !currentRoomId) return;
+  const uid = getUserId();
+  if (!sb || !currentRoomId || !uid) return;
 
   const room = await fetchRoom();
   const votes = { ...(room?.votes || {}) };
-  votes[subject] = (votes[subject] || 0) + 1;
+
+  if (!votes.user_votes) {
+    votes.user_votes = {};
+  }
+
+  votes.user_votes[uid] = {
+    subject: typeof vote === "string" ? vote : vote.subject,
+    tiles: typeof vote === "object" ? Number(vote.tiles) : 16,
+    timeLimit: typeof vote === "object" ? Number(vote.timeLimit) : 120,
+    maxFlips: typeof vote === "object" ? Number(vote.maxFlips) : 40,
+  };
+
+  votes.topics = {};
+  votes.settings = [];
+
+  for (const userId in votes.user_votes) {
+    const userVote = votes.user_votes[userId];
+    if (userVote.subject) {
+      votes.topics[userVote.subject] = (votes.topics[userVote.subject] || 0) + 1;
+    }
+    votes.settings.push({
+      tiles: userVote.tiles,
+      timeLimit: userVote.timeLimit,
+      maxFlips: userVote.maxFlips,
+    });
+  }
 
   const { error } = await sb.from("rooms").update({ votes }).eq("id", currentRoomId);
   if (error) throw error;
@@ -181,7 +208,7 @@ export async function updateMyRoomProgress(pairsMatched, flips) {
     .eq("user_id", uid);
 }
 
-export async function finishMyRoomResult(flips, timeSeconds, score) {
+export async function finishMyRoomResult(flips, timeSeconds, score, pairsMatched = 8) {
   const sb = getSupabase();
   const uid = getUserId();
   if (!sb || !currentRoomId || !uid) return;
@@ -193,7 +220,7 @@ export async function finishMyRoomResult(flips, timeSeconds, score) {
       time_seconds: timeSeconds,
       score,
       finished: true,
-      pairs_matched: 8,
+      pairs_matched: pairsMatched,
     })
     .eq("room_id", currentRoomId)
     .eq("user_id", uid);

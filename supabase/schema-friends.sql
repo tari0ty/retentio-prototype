@@ -3,6 +3,11 @@
 
 alter table public.profiles
   add column if not exists friend_code text unique;
+alter table public.profiles
+  add column if not exists profile_pic_url text,
+  add column if not exists email text,
+  add column if not exists email_visible boolean not null default false,
+  add column if not exists profile_public boolean not null default true;
 
 create or replace function public.gen_friend_code()
 returns text
@@ -30,7 +35,7 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, display_name, avatar, friend_code)
+  insert into public.profiles (id, display_name, avatar, email, friend_code)
   values (
     new.id,
     coalesce(
@@ -39,6 +44,7 @@ begin
       split_part(new.email, '@', 1)
     ),
     'unicorn',
+    new.email,
     public.gen_friend_code()
   )
   on conflict (id) do nothing;
@@ -56,10 +62,21 @@ create table if not exists public.friendships (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   friend_id uuid not null references auth.users (id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted')),
+  accepted_at timestamptz,
   created_at timestamptz not null default now(),
   unique (user_id, friend_id),
   check (user_id <> friend_id)
 );
+
+alter table public.friendships
+  add column if not exists status text not null default 'accepted',
+  add column if not exists accepted_at timestamptz;
+
+update public.friendships
+set status = coalesce(status, 'accepted'),
+    accepted_at = coalesce(accepted_at, created_at)
+where status is null or status = 'accepted';
 
 alter table public.friendships enable row level security;
 
@@ -71,7 +88,13 @@ create policy "friendships_select_own"
 drop policy if exists "friendships_insert_own" on public.friendships;
 create policy "friendships_insert_own"
   on public.friendships for insert to authenticated
-  with check (user_id = auth.uid());
+  with check (user_id = auth.uid() and status = 'pending');
+
+drop policy if exists "friendships_update_recipient" on public.friendships;
+create policy "friendships_update_recipient"
+  on public.friendships for update to authenticated
+  using (friend_id = auth.uid())
+  with check (friend_id = auth.uid() and status = 'accepted');
 
 drop policy if exists "friendships_delete_own" on public.friendships;
 create policy "friendships_delete_own"
@@ -103,8 +126,11 @@ create policy "friend_messages_select_friends"
       select 1
       from public.friendships f
       where
-        (f.user_id = sender_id and f.friend_id = recipient_id)
-        or (f.user_id = recipient_id and f.friend_id = sender_id)
+        f.status = 'accepted'
+        and (
+          (f.user_id = sender_id and f.friend_id = recipient_id)
+          or (f.user_id = recipient_id and f.friend_id = sender_id)
+        )
     )
   );
 
@@ -117,8 +143,11 @@ create policy "friend_messages_insert_friends"
       select 1
       from public.friendships f
       where
-        (f.user_id = sender_id and f.friend_id = recipient_id)
-        or (f.user_id = recipient_id and f.friend_id = sender_id)
+        f.status = 'accepted'
+        and (
+          (f.user_id = sender_id and f.friend_id = recipient_id)
+          or (f.user_id = recipient_id and f.friend_id = sender_id)
+        )
     )
   );
 

@@ -361,6 +361,13 @@ body {
   margin-bottom: 8px;
 }
 
+.friends-card-title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text-dark);
+}
+
 .friends-add-card input {
   flex: 1;
   padding: 10px 12px;
@@ -408,6 +415,37 @@ body {
 }
 
 .friend-row-emoji { font-size: 1.8rem; }
+.friend-row-emoji,
+.friend-chat-avatar,
+.profile-avatar,
+.waiting-avatar,
+.lp-avatar,
+.rr-avatar,
+.player-badge > span:first-child {
+  overflow: hidden;
+}
+
+.has-profile-pic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+}
+
+.has-profile-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.friend-row-emoji.has-profile-pic {
+  width: 42px;
+  height: 42px;
+  border: 3px solid var(--text-dark);
+  border-radius: 50%;
+  font-size: 0;
+}
 .friend-row-info {
   flex: 1 1 130px;
   min-width: 0;
@@ -438,6 +476,11 @@ body {
   border-radius: var(--radius-md);
   padding: 10px;
   min-width: 0;
+}
+
+#friend-profile-panel,
+#friend-chat-panel {
+  grid-column: 2;
 }
 
 .friend-chat-header {
@@ -485,9 +528,28 @@ body {
   color: var(--text-mid);
 }
 
+.friend-profile-details {
+  background: rgba(255,255,255,0.95);
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  color: var(--text-dark);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.friend-profile-details p {
+  margin: 0 0 8px;
+}
+
 @media (max-width: 720px) {
   .friends-content-grid {
     grid-template-columns: 1fr;
+  }
+
+  #friend-profile-panel,
+  #friend-chat-panel {
+    grid-column: auto;
   }
 }
 
@@ -1616,6 +1678,83 @@ body {
   animation: pulse 2s infinite ease-in-out;
 }
 
+.profile-avatar.has-profile-pic {
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 10px;
+  border: 4px solid var(--text-dark);
+  border-radius: 50%;
+  animation: none;
+  font-size: 0;
+}
+
+.profile-email-row {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  overflow-wrap: anywhere;
+  margin-bottom: 6px;
+}
+
+.profile-settings-card {
+  background: var(--white);
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--hard-sm);
+}
+
+.profile-field-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: var(--text-dark);
+}
+
+.profile-photo-actions,
+.profile-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-photo-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-photo-btn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.profile-input-row input {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 3px solid var(--text-dark);
+  border-radius: var(--radius-sm);
+}
+
+.profile-toggle-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.profile-toggle-row input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
 .profile-name {
   font-family: var(--font-display);
   font-size: 1.8rem;
@@ -2458,6 +2597,54 @@ body {
   margin-bottom: 20px;
 }
 
+.vote-settings-card {
+  width: 100%;
+  background: var(--white);
+  border: 4px solid var(--text-dark);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 18px;
+  box-shadow: var(--hard-sm);
+}
+
+.vote-slider-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 12px;
+  align-items: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.vote-slider-row:last-child {
+  margin-bottom: 0;
+}
+
+.vote-slider-row input {
+  width: 100%;
+  accent-color: var(--purple);
+}
+
+.vote-settings-summary {
+  color: var(--white);
+  font-weight: 900;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.player-badge .has-profile-pic,
+.waiting-avatar.has-profile-pic,
+.lp-avatar.has-profile-pic,
+.rr-avatar.has-profile-pic {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--text-dark);
+  border-radius: 50%;
+  font-size: 0;
+}
+
 .vote-bar-row {
   display: flex;
   align-items: center;
@@ -2895,3 +3082,42 @@ body {
 .lb-name   { flex: 2; font-weight: 900; color: var(--text-dark); font-size: 0.9rem; }
 .lb-flips  { flex: 1; font-size: 0.85rem; font-weight: 700; color: var(--text-mid); text-align: center; }
 .lb-time   { flex: 1; font-size: 0.85rem; font-weight: 700; color: var(--purple-dark); text-align: right; }
+
+.rr-friend-btn {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--text-dark);
+  background: var(--purple);
+  color: var(--white);
+  font-family: var(--font-display);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--text-dark);
+  margin-left: 8px;
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+
+.rr-friend-btn:active {
+  transform: translateY(2px) translateX(2px);
+  box-shadow: none;
+}
+
+.rr-friend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 2px 2px 0 var(--text-dark);
+}
+
+.rr-friend-status {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--purple);
+  margin-left: 8px;
+  background: var(--purple-faint);
+  border: 2px solid var(--purple-light);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+}
