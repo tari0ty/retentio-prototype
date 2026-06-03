@@ -103,6 +103,9 @@ export function profileToProgressBlob(profile) {
     gateCompleted: profile.gateCompleted,
     matchboxTutorialDone: profile.matchboxTutorialDone,
     lastGame: profile.lastGame,
+    chatStreak: profile.chatStreak,
+    lastChatDate: profile.lastChatDate,
+    bestScores: profile.bestScores,
   };
 }
 
@@ -111,7 +114,7 @@ export function applyProgressBlob(profile, blob) {
   const keys = [
     "currentQuest", "currentLevel", "unlockedLevels", "unlockedQuests",
     "stars", "bestStats", "totalFlips", "totalSeconds", "gateCompleted",
-    "matchboxTutorialDone", "lastGame",
+    "matchboxTutorialDone", "lastGame", "chatStreak", "lastChatDate", "bestScores",
   ];
   keys.forEach((k) => {
     if (blob[k] !== undefined) profile[k] = blob[k];

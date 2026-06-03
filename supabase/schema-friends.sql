@@ -77,3 +77,55 @@ drop policy if exists "friendships_delete_own" on public.friendships;
 create policy "friendships_delete_own"
   on public.friendships for delete to authenticated
   using (user_id = auth.uid() or friend_id = auth.uid());
+
+create table if not exists public.friend_messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid not null references auth.users (id) on delete cascade,
+  recipient_id uuid not null references auth.users (id) on delete cascade,
+  display_name text not null default 'Player',
+  body text not null,
+  created_at timestamptz not null default now(),
+  check (sender_id <> recipient_id),
+  check (char_length(body) between 1 and 280)
+);
+
+create index if not exists friend_messages_thread_created_idx
+  on public.friend_messages (sender_id, recipient_id, created_at);
+
+alter table public.friend_messages enable row level security;
+
+drop policy if exists "friend_messages_select_friends" on public.friend_messages;
+create policy "friend_messages_select_friends"
+  on public.friend_messages for select to authenticated
+  using (
+    (sender_id = auth.uid() or recipient_id = auth.uid())
+    and exists (
+      select 1
+      from public.friendships f
+      where
+        (f.user_id = sender_id and f.friend_id = recipient_id)
+        or (f.user_id = recipient_id and f.friend_id = sender_id)
+    )
+  );
+
+drop policy if exists "friend_messages_insert_friends" on public.friend_messages;
+create policy "friend_messages_insert_friends"
+  on public.friend_messages for insert to authenticated
+  with check (
+    sender_id = auth.uid()
+    and exists (
+      select 1
+      from public.friendships f
+      where
+        (f.user_id = sender_id and f.friend_id = recipient_id)
+        or (f.user_id = recipient_id and f.friend_id = sender_id)
+    )
+  );
+
+do $$
+begin
+  alter publication supabase_realtime add table public.friend_messages;
+exception
+  when duplicate_object then null;
+  when undefined_object then null;
+end $$;

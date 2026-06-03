@@ -40,6 +40,14 @@
     </div>
   </div>
 
+  <nav id="app-navbar" class="app-navbar hidden-layer" aria-label="Main navigation">
+    <a href="#" id="app-nav-home" class="app-nav-logo">retentiOoo</a>
+    <div class="app-nav-actions">
+      <button type="button" id="app-nav-friends" class="app-nav-btn">Friends</button>
+      <button type="button" id="app-nav-profile" class="app-nav-btn">Profile</button>
+    </div>
+  </nav>
+
   <!-- GAMES HUB -->
   <div id="games-hub-screen" class="hidden-layer">
     <div class="hub-inner">
@@ -49,23 +57,13 @@
           <p class="hub-tagline">Play to remember</p>
         </div>
         <div class="hub-top-actions">
-          <span class="hub-streak-pill" title="Platform streak">🔥 <span id="hub-streak-count">1</span></span>
+          <span class="hub-friends-online-pill" title="Friends online">👥 <span id="hub-online-friends-count">0</span> online</span>
           <button type="button" class="hub-icon-btn" id="hub-friends-btn" title="Friends">👥</button>
           <button type="button" class="hub-icon-btn" id="hub-profile-btn" title="Profile">👤</button>
-          <button type="button" class="hub-signout-btn hidden-layer" id="hub-signout-btn" title="Sign out">Sign out</button>
         </div>
       </header>
 
       <div id="hub-schema-banner" class="hub-schema-banner hidden-layer"></div>
-
-      <button type="button" id="continue-game-btn" class="continue-game-btn hidden-layer">▶️ Continue <span id="continue-game-label">Matchbox</span></button>
-
-      <div class="hub-search-wrap">
-        <span class="hub-search-icon">🔍</span>
-        <input type="search" id="hub-search" class="hub-search-input" placeholder="Search games…" autocomplete="off">
-      </div>
-
-      <div class="hub-filters" id="hub-filters" role="tablist" aria-label="Game categories"></div>
 
       <section class="hub-section">
         <h2 class="hub-section-title">⭐ Featured</h2>
@@ -135,7 +133,23 @@
         <p id="add-friend-msg" class="friends-msg"></p>
       </div>
       <h3 class="section-title friends-list-title">Your friends</h3>
-      <div id="friends-list" class="friends-list"></div>
+      <div class="friends-content-grid">
+        <div id="friends-list" class="friends-list"></div>
+        <section id="friend-chat-panel" class="friend-chat-panel hidden-layer" aria-label="Friend chat">
+          <div class="friend-chat-header">
+            <span id="friend-chat-avatar" class="friend-chat-avatar">👤</span>
+            <div>
+              <h4 id="friend-chat-name" class="friend-chat-name">Friend</h4>
+              <p class="friend-chat-subtitle">Private chat</p>
+            </div>
+          </div>
+          <div id="friend-chat-messages" class="chat-messages friend-chat-messages"></div>
+          <form id="friend-chat-form" class="chat-form">
+            <input type="text" id="friend-chat-input" maxlength="280" placeholder="Message your friend..." autocomplete="off">
+            <button type="submit" class="chat-send-btn">Send</button>
+          </form>
+        </section>
+      </div>
       <p id="friends-guest-note" class="friends-guest-note hidden-layer">Sign in with Google to use friends and live Ranked.</p>
     </div>
   </div>
@@ -255,7 +269,7 @@
           <span class="gm-emoji">🎮</span>
           <div class="gm-info">
             <span class="gm-title">Arcade</span>
-            <span class="gm-desc">5 Quests · 10 Levels each · Learn at your own pace</span>
+            <span class="gm-desc">Level 1 to Level 10 · Learn at your own pace</span>
           </div>
           <span class="gm-arrow">▶️</span>
         </button>
@@ -324,6 +338,7 @@
       <h2 class="map-title">⚔️ Live Lobby</h2>
       <p class="ranked-subtitle" id="ranked-topic-label">Waiting for votes…</p>
       <p class="ranked-live-status" id="ranked-lobby-player-count">Players: 1</p>
+      <p class="ranked-live-status chat-streak-pill">Chat streak: <span id="chat-streak-count">0</span> days</p>
       <div class="ranked-lobby-grid">
         <div class="lobby-players-col">
           <h3 class="lobby-col-title">Players</h3>
@@ -441,7 +456,7 @@
 
     <div class="wrapper">
       <div class="stats-container">
-        <div class="stat"><span class="stat-label">Quest</span><span class="stat-value" id="current-subject-label">-</span></div>
+        <div class="stat"><span class="stat-label">Game</span><span class="stat-value" id="current-subject-label">Matchbox</span></div>
         <div class="stat"><span class="stat-label">Level</span><span class="stat-value" id="current-level-label">1</span></div>
         <div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timer">0:00</span></div>
         <div class="stat"><span class="stat-label">Flips</span><span class="stat-value" id="flips">0</span></div>
@@ -484,17 +499,12 @@
         <div class="profile-name" id="profile-name">Player</div>
         <div class="profile-badge" id="profile-badge">Quest 1 · Level 1</div>
         <div class="profile-rank-badge" id="profile-rank-badge">🏆 Global Rank #—</div>
+        <div class="profile-friends-badge" id="profile-friends-badge">👥 0 friends</div>
+        <button type="button" class="profile-signout-btn hidden-layer" id="profile-signout-btn">Sign out</button>
       </div>
       <div class="profile-section">
-        <h3 class="section-title">My Progress</h3>
+        <h3 class="section-title">Best Scores By Game</h3>
         <div class="progress-cards" id="progress-cards"></div>
-      </div>
-      <div class="profile-section">
-        <h3 class="section-title">Best Stats Per Subject</h3>
-        <div class="stats-table-header">
-          <span>Subject</span><span>Best Flips</span><span>Best Time</span>
-        </div>
-        <div class="stats-table" id="stats-table"></div>
       </div>
     </div>
   </div>

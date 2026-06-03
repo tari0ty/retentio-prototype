@@ -1,5 +1,7 @@
 import { getSupabase, getUserId, isAuthenticated } from "./auth.js";
 
+let friendMessagesChannel = null;
+
 export async function ensureFriendCode() {
   const sb = getSupabase();
   const uid = getUserId();
@@ -105,16 +107,87 @@ export async function removeFriend(friendUserId) {
   await sb.from("friendships").delete().eq("user_id", friendUserId).eq("friend_id", uid);
 }
 
+export async function fetchFriendMessages(friendUserId, limit = 80) {
+  const sb = getSupabase();
+  const uid = getUserId();
+  if (!sb || !uid || !friendUserId) return [];
+
+  const { data, error } = await sb
+    .from("friend_messages")
+    .select("*")
+    .or(
+      `and(sender_id.eq.${uid},recipient_id.eq.${friendUserId}),and(sender_id.eq.${friendUserId},recipient_id.eq.${uid})`
+    )
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function sendFriendMessage(friendUserId, displayName, body) {
+  const sb = getSupabase();
+  const uid = getUserId();
+  if (!sb || !uid || !friendUserId) return;
+
+  const text = body.trim().slice(0, 280);
+  if (!text) return;
+
+  const { data, error } = await sb
+    .from("friend_messages")
+    .insert({
+      sender_id: uid,
+      recipient_id: friendUserId,
+      display_name: displayName || "Player",
+      body: text,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export function subscribeToFriendMessages(friendUserId, handler) {
+  const sb = getSupabase();
+  const uid = getUserId();
+  if (!sb || !uid || !friendUserId) return;
+
+  unsubscribeFromFriendMessages();
+  friendMessagesChannel = sb
+    .channel(`friend_messages:${uid}:${friendUserId}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "friend_messages" },
+      (payload) => {
+        const msg = payload.new;
+        const isCurrentThread =
+          (msg.sender_id === uid && msg.recipient_id === friendUserId) ||
+          (msg.sender_id === friendUserId && msg.recipient_id === uid);
+        if (isCurrentThread) handler?.(msg);
+      }
+    )
+    .subscribe();
+}
+
+export function unsubscribeFromFriendMessages() {
+  const sb = getSupabase();
+  if (sb && friendMessagesChannel) sb.removeChannel(friendMessagesChannel);
+  friendMessagesChannel = null;
+}
+
 export async function checkFriendsReady() {
   if (!isAuthenticated()) return { ok: false, reason: "auth" };
   const sb = getSupabase();
   if (!sb) return { ok: false, reason: "config" };
   const { error } = await sb.from("friendships").select("id").limit(1);
-  if (error) {
-    if (error.code === "42P01" || error.message?.includes("does not exist")) {
+  const { error: msgError } = error
+    ? { error: null }
+    : await sb.from("friend_messages").select("id").limit(1);
+  const readyError = error || msgError;
+  if (readyError) {
+    if (readyError.code === "42P01" || readyError.message?.includes("does not exist")) {
       return { ok: false, reason: "schema" };
     }
-    return { ok: false, reason: "error", message: error.message };
+    return { ok: false, reason: "error", message: readyError.message };
   }
   return { ok: true };
 }

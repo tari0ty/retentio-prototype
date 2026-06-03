@@ -34,6 +34,10 @@ import {
   fetchFriendsList,
   addFriendByCode,
   removeFriend,
+  fetchFriendMessages,
+  sendFriendMessage,
+  subscribeToFriendMessages,
+  unsubscribeFromFriendMessages,
   checkFriendsReady,
 } from "./js/friends.js";
 
@@ -115,9 +119,15 @@ document.addEventListener("DOMContentLoaded", function () {
     matchboxTutorialDone:false,
     lastGame:null,
     platformStreak:1,
-    lastStreakDate:null
+    lastStreakDate:null,
+    chatStreak:0,
+    lastChatDate:null,
+    bestScores:{}
   };
   let isLoggedIn = false;
+  let cachedFriends = [];
+  let activeFriendChat = null;
+  let friendChatMessageIds = new Set();
 
   // ----------------------------------------------------------
   //  ADVENTURE GAME STATE
@@ -168,6 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     tutorialScreen.classList.add("hidden-layer");
     quizScreen.classList.add("hidden-layer");
+    closeFriendChat();
   }
 
   let cloudSaveToastTimer = null;
@@ -262,6 +273,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!activeProfile.unlockedQuests) activeProfile.unlockedQuests = [1];
     if (!activeProfile.unlockedLevels) activeProfile.unlockedLevels = {1:1,2:1,3:1,4:1,5:1};
     if (!activeProfile.bestStats) activeProfile.bestStats = {};
+    if (!activeProfile.bestScores) activeProfile.bestScores = {};
 
     saveProfile();
   }
@@ -296,23 +308,28 @@ document.addEventListener("DOMContentLoaded", function () {
       totalSeconds: guest.totalSeconds,
       matchboxTutorialDone: guest.matchboxTutorialDone,
       lastGame: guest.lastGame,
+      chatStreak: guest.chatStreak,
+      lastChatDate: guest.lastChatDate,
+      bestScores: guest.bestScores,
     };
   }
 
   function updateHubAuthUI() {
-    const signOutBtn = document.getElementById("hub-signout-btn");
     const googleBtn = document.getElementById("gate-google-btn");
     const warn = document.getElementById("gate-config-warning");
 
-    if (signOutBtn) {
-      signOutBtn.classList.toggle("hidden-layer", !isAuthenticated());
-    }
     if (googleBtn) {
       googleBtn.disabled = !isAuthConfigured();
     }
     if (warn) {
       warn.classList.toggle("hidden-layer", isAuthConfigured());
     }
+  }
+
+  function updateAppNavbar(show = true) {
+    const nav = document.getElementById("app-navbar");
+    if (!nav) return;
+    nav.classList.toggle("hidden-layer", !show);
   }
 
   function needsOnboardingQuiz() {
@@ -368,6 +385,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!activeProfile.unlockedQuests) activeProfile.unlockedQuests = [1];
     if (!activeProfile.unlockedLevels) activeProfile.unlockedLevels = {1:1,2:1,3:1,4:1,5:1};
     if (!activeProfile.bestStats) activeProfile.bestStats = {};
+    if (!activeProfile.bestScores) activeProfile.bestScores = {};
     if (!isAuthenticated()) {
       isLoggedIn = !!activeProfile.isLoggedIn && !activeProfile.isGuest;
     }
@@ -412,6 +430,29 @@ document.addEventListener("DOMContentLoaded", function () {
     saveProfile();
   }
 
+  function updateChatStreakUI() {
+    const el = document.getElementById("chat-streak-count");
+    if (el) el.textContent = activeProfile.chatStreak || 0;
+  }
+
+  function recordChatActivity() {
+    const today = new Date().toDateString();
+    if (activeProfile.lastChatDate === today) return;
+    if (!activeProfile.lastChatDate) {
+      activeProfile.chatStreak = 1;
+    } else {
+      const last = new Date(activeProfile.lastChatDate);
+      const now = new Date(today);
+      const diffDays = Math.round((now - last) / 86400000);
+      activeProfile.chatStreak = diffDays === 1
+        ? (activeProfile.chatStreak || 0) + 1
+        : 1;
+    }
+    activeProfile.lastChatDate = today;
+    saveProfile();
+    updateChatStreakUI();
+  }
+
   function updateRankedModeUI() {
     const rankedBtn = document.getElementById("ranked-mode-btn");
     const lockBadge = document.getElementById("ranked-lock-badge");
@@ -426,54 +467,36 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderHub() {
-    updatePlatformStreak();
-    const streakEl = document.getElementById("hub-streak-count");
-    if (streakEl) streakEl.textContent = activeProfile.platformStreak || 1;
-
-    const continueBtn = document.getElementById("continue-game-btn");
-    const continueLabel = document.getElementById("continue-game-label");
-    if (activeProfile.lastGame === "matchbox" && activeProfile.nickname) {
-      continueBtn.classList.remove("hidden-layer");
-      if (continueLabel) continueLabel.textContent = "Matchbox";
-    } else {
-      continueBtn.classList.add("hidden-layer");
-    }
-
-    const filtersEl = document.getElementById("hub-filters");
-    if (filtersEl) {
-      filtersEl.innerHTML = "";
-      HUB_CATEGORIES.forEach(cat => {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = `hub-filter-chip ${hubFilter === cat ? "active" : ""}`;
-        chip.textContent = cat;
-        chip.addEventListener("click", () => {
-          hubFilter = cat;
-          renderHub();
-        });
-        filtersEl.appendChild(chip);
-      });
-    }
-
-    const filtered = GAMES.filter(g => {
-      const matchCat = hubFilter === "All" || g.category === hubFilter;
-      const q = hubSearchQuery.trim().toLowerCase();
-      const matchSearch = !q || g.title.toLowerCase().includes(q) || g.category.toLowerCase().includes(q);
-      return matchCat && matchSearch;
-    });
+    refreshHubFriendCounts();
 
     const featuredEl = document.getElementById("hub-featured-row");
     if (featuredEl) {
       featuredEl.innerHTML = "";
-      GAMES.filter(g => g.featured).forEach(g => {
-        featuredEl.appendChild(buildHubTile(g, true));
-      });
+      const lastGame = GAMES.find(g => g.id === activeProfile.lastGame) || GAMES.find(g => g.id === "matchbox");
+      if (lastGame) featuredEl.appendChild(buildHubTile(lastGame, true));
     }
 
     const gridEl = document.getElementById("hub-games-grid");
     if (gridEl) {
       gridEl.innerHTML = "";
-      filtered.forEach(g => gridEl.appendChild(buildHubTile(g, false)));
+      GAMES.forEach(g => gridEl.appendChild(buildHubTile(g, false)));
+    }
+  }
+
+  async function refreshHubFriendCounts() {
+    const el = document.getElementById("hub-online-friends-count");
+    if (!el) return;
+    if (!isAuthenticated()) {
+      el.textContent = "0";
+      return;
+    }
+    try {
+      cachedFriends = await fetchFriendsList();
+      const friendIds = new Set(cachedFriends.map(f => f.id));
+      const online = rankedLiveMembers.filter(m => friendIds.has(m.user_id)).length;
+      el.textContent = online;
+    } catch (_) {
+      el.textContent = "0";
     }
   }
 
@@ -504,6 +527,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function launchHub() {
     hideAll();
+    updateAppNavbar(true);
     activeProfile.gateCompleted = true;
     saveProfile();
     syncAuthFlags();
@@ -515,6 +539,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function launchAccountGate() {
     hideAll();
+    updateAppNavbar(false);
     accountGateScreen.classList.remove("hidden-layer");
   }
 
@@ -632,7 +657,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("gate-google-btn").addEventListener("click", startGoogleSignIn);
   document.getElementById("gate-skip-btn").addEventListener("click", completeGateSkip);
 
-  document.getElementById("hub-signout-btn").addEventListener("click", async ()=>{
+  async function handleSignOut() {
     try{
       await signOut();
       isLoggedIn=false;
@@ -645,16 +670,9 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error(err);
       alert("Could not sign out.");
     }
-  });
+  }
 
-  document.getElementById("hub-search").addEventListener("input", (e) => {
-    hubSearchQuery = e.target.value;
-    renderHub();
-  });
-
-  document.getElementById("continue-game-btn").addEventListener("click", () => {
-    if (activeProfile.lastGame === "matchbox") launchMatchbox();
-  });
+  document.getElementById("profile-signout-btn")?.addEventListener("click", handleSignOut);
 
   document.getElementById("hub-profile-btn").addEventListener("click", () => {
     if (activeProfile.nickname) launchProfileScreen();
@@ -664,7 +682,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("hub-parent-btn").addEventListener("click", () => {
     hideAll();
+    updateAppNavbar(true);
     parentDashboardScreen.classList.remove("hidden-layer");
+  });
+
+  document.getElementById("app-nav-home")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    launchHub();
+  });
+
+  document.getElementById("app-nav-friends")?.addEventListener("click", () => {
+    if (isAuthenticated()) launchFriendsScreen();
+    else document.getElementById("auth-modal").classList.add("active");
+  });
+
+  document.getElementById("app-nav-profile")?.addEventListener("click", () => {
+    if (activeProfile.nickname) launchProfileScreen();
+    else if (isAuthenticated()) showOnboardingQuiz("hub");
+    else document.getElementById("auth-modal").classList.add("active");
   });
 
   async function launchFriendsScreen() {
@@ -673,6 +708,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const codeEl = document.getElementById("my-friend-code");
     const listEl = document.getElementById("friends-list");
     const addMsg = document.getElementById("add-friend-msg");
+    closeFriendChat();
 
     if (!isAuthenticated()) {
       guestNote.classList.remove("hidden-layer");
@@ -702,8 +738,10 @@ document.addEventListener("DOMContentLoaded", function () {
   async function renderFriendsList() {
     const listEl = document.getElementById("friends-list");
     const friends = await fetchFriendsList();
+    cachedFriends = friends;
     if (!friends.length) {
       listEl.innerHTML = `<p class="friends-empty">No friends yet. Share your code with other test accounts!</p>`;
+      closeFriendChat();
       return;
     }
     listEl.innerHTML = "";
@@ -716,14 +754,79 @@ document.addEventListener("DOMContentLoaded", function () {
           <div class="friend-row-name">${f.display_name || "Player"}</div>
           <div class="friend-row-code">Code: ${f.friend_code || "—"}</div>
         </div>
+        <button type="button" class="chat-send-btn friend-chat-open-btn" data-id="${f.id}">Chat</button>
         <button type="button" class="back-btn friend-remove-btn" data-id="${f.id}">Remove</button>
       `;
+      row.querySelector(".friend-chat-open-btn").addEventListener("click", () => {
+        openFriendChat(f);
+      });
       row.querySelector(".friend-remove-btn").addEventListener("click", async () => {
         await removeFriend(f.id);
+        if (activeFriendChat?.id === f.id) closeFriendChat();
         await renderFriendsList();
       });
       listEl.appendChild(row);
     });
+  }
+
+  function closeFriendChat() {
+    activeFriendChat = null;
+    friendChatMessageIds = new Set();
+    unsubscribeFromFriendMessages();
+    document.getElementById("friend-chat-panel")?.classList.add("hidden-layer");
+    const box = document.getElementById("friend-chat-messages");
+    if (box) box.innerHTML = "";
+    const input = document.getElementById("friend-chat-input");
+    if (input) input.value = "";
+  }
+
+  function appendFriendMessage(msg, scroll = true) {
+    const box = document.getElementById("friend-chat-messages");
+    if (!box || !msg) return;
+    if (msg.id && friendChatMessageIds.has(msg.id)) return;
+    if (msg.id) friendChatMessageIds.add(msg.id);
+    const line = document.createElement("div");
+    const mine = msg.sender_id === getUserId();
+    line.className = `chat-line friend-chat-line ${mine ? "mine" : ""}`;
+    const time = new Date(msg.created_at || Date.now()).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const name = mine
+      ? (activeProfile.nickname || "You")
+      : (activeFriendChat?.display_name || msg.display_name || "Friend");
+    line.innerHTML = `<span class="chat-time">${time}</span> <strong>${escapeChat(name)}</strong>: ${escapeChat(msg.body)}`;
+    box.appendChild(line);
+    if (scroll) box.scrollTop = box.scrollHeight;
+  }
+
+  async function openFriendChat(friend) {
+    activeFriendChat = friend;
+    const panel = document.getElementById("friend-chat-panel");
+    const avatar = document.getElementById("friend-chat-avatar");
+    const name = document.getElementById("friend-chat-name");
+    const box = document.getElementById("friend-chat-messages");
+    if (!panel || !box) return;
+
+    if (avatar) avatar.textContent = AVATAR_EMOJI[friend.avatar] || "👤";
+    if (name) name.textContent = friend.display_name || "Friend";
+    friendChatMessageIds = new Set();
+    box.innerHTML = `<p class="friends-empty friend-chat-loading">Loading chat...</p>`;
+    panel.classList.remove("hidden-layer");
+
+    try {
+      const serverProfile = await fetchServerProfile();
+      if (serverProfile?.display_name) activeProfile.nickname = serverProfile.display_name;
+      const messages = await fetchFriendMessages(friend.id);
+      box.innerHTML = "";
+      messages.forEach((m) => appendFriendMessage(m, false));
+      box.scrollTop = box.scrollHeight;
+      subscribeToFriendMessages(friend.id, appendFriendMessage);
+      document.getElementById("friend-chat-input")?.focus();
+    } catch (err) {
+      console.error(err);
+      box.innerHTML = `<p class="friends-empty friend-chat-loading">Run schema-friends.sql in Supabase to enable friend chat.</p>`;
+    }
   }
 
   document.getElementById("hub-friends-btn").addEventListener("click", () => {
@@ -760,6 +863,27 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (err) {
       msg.textContent = err.message || "Could not add friend.";
       msg.className = "friends-msg err";
+    }
+  });
+
+  document.getElementById("friend-chat-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = document.getElementById("friend-chat-input");
+    if (!input || !activeFriendChat) return;
+    try {
+      const serverProfile = await fetchServerProfile();
+      const displayName = serverProfile?.display_name || activeProfile.nickname || "Player";
+      const sent = await sendFriendMessage(activeFriendChat.id, displayName, input.value);
+      appendFriendMessage(sent);
+      recordChatActivity();
+      input.value = "";
+    } catch (err) {
+      console.error(err);
+      const errText = err.message || String(err);
+      const setupHint = errText.includes("friend_messages") || errText.includes("does not exist")
+        ? "\n\nRun supabase/schema-friends.sql in Supabase SQL Editor, then refresh this page."
+        : "";
+      alert("Could not send message: " + errText + setupHint);
     }
   });
 
@@ -930,6 +1054,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ----------------------------------------------------------
   function launchGameMode(){
     hideAll();
+    updateAppNavbar(true);
     const avatar=AVATAR_EMOJI[activeProfile.avatar]||"🦄";
     const nickname=activeProfile.nickname||"Player";
     document.getElementById("gm-avatar").textContent=avatar;
@@ -942,7 +1067,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("adventure-mode-btn").addEventListener("click",()=>{
     gameModeScreen.classList.add("hidden-layer");
-    launchQuestSelect();
+    launchCoreGameBoard(1, activeProfile.currentLevel || 1);
   });
 
   document.getElementById("ranked-mode-btn").addEventListener("click",()=>{
@@ -1054,14 +1179,17 @@ document.addEventListener("DOMContentLoaded", function () {
   //  ADVENTURE GAME BOARD
   // ----------------------------------------------------------
   function launchCoreGameBoard(questId,level){
-    const quest=QUESTS.find(q=>q.id===questId);
-    const subTopic=quest.levels[level-1];
-    document.getElementById("current-subject-label").textContent=`${quest.emoji} ${subTopic}`;
+    updateAppNavbar(false);
+    document.getElementById("current-subject-label").textContent="Matchbox";
     document.getElementById("current-level-label").textContent=level;
     animateNavLogo("nav-logo-link");
     initNavToggle();
     gameScreen.classList.remove("hidden-layer");
-    buildAndShuffleCards(quest.subject,level,"game-cards",false);
+    activeProfile.currentQuest = 1;
+    activeProfile.currentLevel = level;
+    activeProfile.lastGame = "matchbox";
+    saveProfile();
+    buildAndShuffleCards("Animals",level,"game-cards",false);
   }
 
   function buildAndShuffleCards(subject,level,gridId,isRanked){
@@ -1330,6 +1458,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function launchRankedVote() {
     hideAll();
+    updateAppNavbar(true);
     document.getElementById("rv-avatar").textContent = AVATAR_EMOJI[activeProfile.avatar] || "🦄";
     document.getElementById("rv-name").textContent = activeProfile.nickname || "Player";
 
@@ -1403,6 +1532,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     renderWaitingRoomMembers(rankedLiveMembers);
     loadChatHistory("chat-messages");
+    updateChatStreakUI();
 
     const countEl = document.getElementById("waiting-timer");
     if (countEl) {
@@ -1419,6 +1549,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const input = document.getElementById("chat-input");
     if (!input) return;
     await sendChatMessage(activeProfile.nickname || "Player", input.value);
+    recordChatActivity();
     input.value = "";
   });
 
@@ -1427,10 +1558,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const input = document.getElementById("game-chat-input");
     if (!input) return;
     await sendChatMessage(activeProfile.nickname || "Player", input.value);
+    recordChatActivity();
     input.value = "";
   });
 
   function launchRankedGame() {
+    updateAppNavbar(false);
     const quest = QUESTS.find((q) => q.subject === rankedTopic) || QUESTS[0];
     rankedSeconds = 120;
     rankedFlips = 0;
@@ -1445,6 +1578,7 @@ document.addEventListener("DOMContentLoaded", function () {
     rankedGameScreen.classList.remove("hidden-layer");
     document.getElementById("ranked-game-chat").classList.remove("hidden-layer");
     loadChatHistory("game-chat-messages");
+    updateChatStreakUI();
     animateNavLogo("ranked-logo");
 
     buildAndShuffleCards(rankedTopic, 6, "ranked-cards", true);
@@ -1499,6 +1633,17 @@ document.addEventListener("DOMContentLoaded", function () {
     clearInterval(rankedInterval);
     const timeTaken=120-rankedSeconds;
     const myScore=calcRankedScore(rankedFlips,timeTaken);
+    if (!activeProfile.bestScores) activeProfile.bestScores = {};
+    const rankedBest = activeProfile.bestScores.ranked;
+    if (!rankedBest || myScore < rankedBest.score) {
+      activeProfile.bestScores.ranked = {
+        flips: rankedFlips,
+        time: timeTaken,
+        score: myScore,
+        completed: !!completed
+      };
+      saveProfile();
+    }
     if (liveRankedActive) {
       await finishMyRoomResult(rankedFlips, timeTaken, myScore);
       rankedLiveMembers = await fetchRoomMembers();
@@ -1673,23 +1818,22 @@ document.addEventListener("DOMContentLoaded", function () {
   //  WIN MODAL (Adventure)
   // ----------------------------------------------------------
   function showWinModal(){
-    const questId=activeProfile.currentQuest;
     const level=activeProfile.currentLevel;
-    const quest=QUESTS.find(q=>q.id===questId);
-    const subTopic=quest.levels[level-1];
     const config=LEVEL_CONFIG[level];
     const earned=calcStars(config.pairs,flips);
     const timeStr=document.getElementById("timer").textContent;
 
-    if(!activeProfile.stars[questId]) activeProfile.stars[questId]={};
-    activeProfile.stars[questId][level]=Math.max(activeProfile.stars[questId][level]||0,earned);
+    if(!activeProfile.stars.matchbox) activeProfile.stars.matchbox={};
+    activeProfile.stars.matchbox[level]=Math.max(activeProfile.stars.matchbox[level]||0,earned);
 
-    const subject=quest.subject;
-    if(!activeProfile.bestStats[subject]){
-      activeProfile.bestStats[subject]={flips,time:seconds};
+    if(!activeProfile.bestScores) activeProfile.bestScores={};
+    if(!activeProfile.bestScores.matchbox){
+      activeProfile.bestScores.matchbox={flips,time:seconds,level};
     } else {
-      if(flips<activeProfile.bestStats[subject].flips) activeProfile.bestStats[subject].flips=flips;
-      if(seconds<activeProfile.bestStats[subject].time) activeProfile.bestStats[subject].time=seconds;
+      const best=activeProfile.bestScores.matchbox;
+      if(level>(best.level||1)||flips<best.flips||seconds<best.time){
+        activeProfile.bestScores.matchbox={flips,time:seconds,level};
+      }
     }
 
     activeProfile.totalFlips=(activeProfile.totalFlips||0)+flips;
@@ -1697,22 +1841,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const nextLevel=level+1;
     if(nextLevel<=10){
-      activeProfile.unlockedLevels[questId]=Math.max(activeProfile.unlockedLevels[questId]||1,nextLevel);
-    } else {
-      const nextQuest=questId+1;
-      if(nextQuest<=5&&!activeProfile.unlockedQuests.includes(nextQuest)){
-        activeProfile.unlockedQuests.push(nextQuest);
-        activeProfile.unlockedLevels[nextQuest]=1;
-      }
+      activeProfile.unlockedLevels.matchbox=Math.max(activeProfile.unlockedLevels.matchbox||1,nextLevel);
     }
 
     saveProfile();
 
     document.getElementById("win-title").textContent=`Level ${level} Complete!`;
-    document.getElementById("win-quest-label").textContent=`${quest.subject} ${quest.emoji} — ${subTopic}`;
+    document.getElementById("win-quest-label").textContent=`Matchbox - Level ${level}`;
     document.getElementById("win-time").textContent=timeStr;
     document.getElementById("win-flips").textContent=flips;
-    const best=activeProfile.bestStats[subject];
+    const best=activeProfile.bestScores?.matchbox;
     document.getElementById("win-best").textContent=best?`${best.flips} flips`:"-";
 
     ["win-star-1","win-star-2","win-star-3"].forEach((id,i)=>{
@@ -1727,18 +1865,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("win-continue-btn").addEventListener("click",()=>{
     winModal.classList.remove("active");
-    const questId=activeProfile.currentQuest;
     const nextLevel=activeProfile.currentLevel+1;
     if(nextLevel<=10){
       activeProfile.currentLevel=nextLevel;
-      const quest=QUESTS.find(q=>q.id===questId);
-      const subTopic=quest.levels[nextLevel-1];
       document.getElementById("current-level-label").textContent=nextLevel;
-      document.getElementById("current-subject-label").textContent=`${quest.emoji} ${subTopic}`;
-      buildAndShuffleCards(quest.subject,nextLevel,"game-cards",false);
+      document.getElementById("current-subject-label").textContent="Matchbox";
+      buildAndShuffleCards("Animals",nextLevel,"game-cards",false);
     } else {
       gameScreen.classList.add("hidden-layer");
-      launchQuestSelect();
+      launchGameMode();
     }
   });
 
@@ -1750,22 +1885,68 @@ document.addEventListener("DOMContentLoaded", function () {
   // ----------------------------------------------------------
   //  PROFILE SCREEN
   // ----------------------------------------------------------
-  function launchProfileScreen(){
+  async function launchProfileScreen(){
     hideAll();
+    updateAppNavbar(true);
     const avatar=AVATAR_EMOJI[activeProfile.avatar]||"🦄";
     const nickname=activeProfile.nickname||"Player";
-    const quest=QUESTS.find(q=>q.id===activeProfile.currentQuest);
     document.getElementById("profile-avatar").textContent=avatar;
     document.getElementById("profile-name").textContent=nickname;
-    document.getElementById("profile-badge").textContent=`${quest?quest.name:"Quest 1"} · Level ${activeProfile.currentLevel}`;
+    document.getElementById("profile-badge").textContent=`Matchbox · Level ${activeProfile.currentLevel || 1}`;
 
     const allPlayers=getPlaceholderPlayers();
     allPlayers.push(activeProfile);
     const rank=getGlobalRank(activeProfile,allPlayers);
     document.getElementById("profile-rank-badge").textContent=`🏆 Global Rank #${rank}`;
+    document.getElementById("profile-signout-btn")?.classList.toggle("hidden-layer", !isAuthenticated());
+
+    let friendCount = cachedFriends.length;
+    if (isAuthenticated()) {
+      try {
+        cachedFriends = await fetchFriendsList();
+        friendCount = cachedFriends.length;
+      } catch (_) {
+        friendCount = cachedFriends.length;
+      }
+    }
+    const friendsBadge = document.getElementById("profile-friends-badge");
+    if (friendsBadge) friendsBadge.textContent = `👥 ${friendCount} friend${friendCount === 1 ? "" : "s"}`;
 
     const progressCards=document.getElementById("progress-cards");
     progressCards.innerHTML="";
+    const matchboxBest=activeProfile.bestScores?.matchbox;
+    const matchboxStars=activeProfile.stars?.matchbox||{};
+    const levelsPlayed=Object.keys(matchboxStars).length;
+    const totalStars=Object.values(matchboxStars).reduce((a,b)=>a+b,0);
+    [
+      {
+        emoji:"🎮",
+        name:"Matchbox Arcade",
+        detail:matchboxBest
+          ? `Best: ${matchboxBest.flips} flips · ${formatTime(matchboxBest.time)} · Level ${matchboxBest.level}`
+          : `No score yet · ${levelsPlayed}/10 levels · ${totalStars}/30 stars`
+      },
+      {
+        emoji:"🏆",
+        name:"Matchbox Ranked",
+        detail:activeProfile.bestScores?.ranked
+          ? `Best: ${activeProfile.bestScores.ranked.flips} flips · ${formatTime(activeProfile.bestScores.ranked.time)}`
+          : "No ranked score yet"
+      }
+    ].forEach(game=>{
+      const card=document.createElement("div");
+      card.className="progress-card";
+      card.innerHTML=`
+        <span class="progress-card-emoji">${game.emoji}</span>
+        <div class="progress-card-info">
+          <span class="progress-card-name">${game.name}</span>
+          <span class="progress-card-detail">${game.detail}</span>
+        </div>
+      `;
+      progressCards.appendChild(card);
+    });
+    profileScreen.classList.remove("hidden-layer");
+    return;
     QUESTS.forEach(q=>{
       const unlocked=activeProfile.unlockedQuests.includes(q.id);
       const questStars=activeProfile.stars[q.id]||{};
@@ -1810,6 +1991,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ----------------------------------------------------------
   function launchLeaderboard(){
     hideAll();
+    updateAppNavbar(true);
     const list=document.getElementById("leaderboard-list");
     list.innerHTML="";
     const allPlayers=[...getPlaceholderPlayers(),activeProfile];
@@ -1861,7 +2043,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("nav-adventure-link").addEventListener("click",e=>{
     e.preventDefault();
     gameScreen.classList.add("hidden-layer");
-    launchQuestSelect();
+    launchCoreGameBoard(1, activeProfile.currentLevel || 1);
   });
 
   document.getElementById("nav-ranked-link").addEventListener("click",e=>{
