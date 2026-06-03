@@ -795,7 +795,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const name = mine
       ? (activeProfile.nickname || "You")
       : (activeFriendChat?.display_name || msg.display_name || "Friend");
-    line.innerHTML = `<span class="chat-time">${time}</span> <strong>${escapeChat(name)}</strong>: ${escapeChat(msg.body)}`;
+    line.innerHTML = `
+      <div class="chat-line-bubble">
+        <span class="chat-line-meta"><span class="chat-time">${time}</span> <strong>${escapeChat(name)}</strong></span>
+        <span>${escapeChat(msg.body)}</span>
+      </div>
+    `;
     box.appendChild(line);
     if (scroll) box.scrollTop = box.scrollHeight;
   }
@@ -1325,12 +1330,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const box = document.getElementById(containerId);
     if (!box || !msg) return;
     const line = document.createElement("div");
-    line.className = "chat-line";
+    const mine = msg.user_id === getUserId();
+    line.className = `chat-line ${mine ? "mine" : ""}`;
     const time = new Date(msg.created_at || Date.now()).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
-    line.innerHTML = `<span class="chat-time">${time}</span> <strong>${msg.display_name}</strong>: ${escapeChat(msg.body)}`;
+    line.innerHTML = `
+      <div class="chat-line-bubble">
+        <span class="chat-line-meta"><span class="chat-time">${time}</span> <strong>${escapeChat(msg.display_name)}</strong></span>
+        <span>${escapeChat(msg.body)}</span>
+      </div>
+    `;
     box.appendChild(line);
     if (scroll) box.scrollTop = box.scrollHeight;
   }

@@ -595,7 +595,37 @@ body {
 
 .chat-messages-compact { height: 120px; }
 
-.chat-line { margin-bottom: 6px; word-break: break-word; }
+.chat-line {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.chat-line.mine {
+  justify-content: flex-end;
+}
+
+.chat-line-bubble {
+  max-width: min(82%, 340px);
+  padding: 8px 10px;
+  border: 2px solid rgba(45, 35, 70, 0.18);
+  border-radius: 8px 8px 8px 2px;
+  background: rgba(255,255,255,0.92);
+  color: var(--text-dark);
+}
+
+.chat-line.mine .chat-line-bubble {
+  border-color: rgba(111, 73, 208, 0.38);
+  border-radius: 8px 8px 2px 8px;
+  background: rgba(239, 232, 255, 0.96);
+}
+
+.chat-line-meta {
+  display: block;
+  margin-bottom: 2px;
+}
+
 .chat-line .chat-time { color: var(--text-mid); font-size: 0.75rem; }
 
 .chat-form {
