@@ -38,6 +38,10 @@ export function getUserId() {
   return currentSession?.user?.id ?? null;
 }
 
+export function getUserEmail() {
+  return currentSession?.user?.email ?? "";
+}
+
 export function isAuthenticated() {
   return !!currentSession?.user;
 }
@@ -124,11 +128,19 @@ export function applyProgressBlob(profile, blob) {
 export async function fetchServerProfile() {
   if (!supabase || !isAuthenticated()) return null;
   const id = getUserId();
-  const { data, error } = await supabase
+  let result = await supabase
     .from("profiles")
-    .select("display_name, avatar, progress, platform_streak, last_streak_date")
+    .select("display_name, avatar, profile_pic_url, email, email_visible, profile_public, progress, platform_streak, last_streak_date")
     .eq("id", id)
     .maybeSingle();
+  if (result.error?.code === "42703") {
+    result = await supabase
+      .from("profiles")
+      .select("display_name, avatar, progress, platform_streak, last_streak_date")
+      .eq("id", id)
+      .maybeSingle();
+  }
+  const { data, error } = result;
 
   if (error) {
     console.error("[retentiOoo] fetch profile:", error.message);
@@ -140,16 +152,32 @@ export async function fetchServerProfile() {
 export async function upsertServerProfile(profile) {
   if (!supabase || !isAuthenticated()) return { ok: false, skipped: true };
   const id = getUserId();
+  const user = currentSession.user;
   const row = {
     id,
     display_name: profile.nickname || null,
     avatar: profile.avatar || "unicorn",
+    profile_pic_url: profile.profilePicUrl || null,
+    email: user.email || null,
+    email_visible: !!profile.emailVisible,
+    profile_public: profile.profilePublic !== false,
     progress: profileToProgressBlob(profile),
     platform_streak: profile.platformStreak ?? 1,
     last_streak_date: profile.lastStreakDate || null,
   };
 
-  const { error } = await supabase.from("profiles").upsert(row, { onConflict: "id" });
+  let { error } = await supabase.from("profiles").upsert(row, { onConflict: "id" });
+  if (error?.code === "42703") {
+    const fallback = {
+      id,
+      display_name: row.display_name,
+      avatar: row.avatar,
+      progress: row.progress,
+      platform_streak: row.platform_streak,
+      last_streak_date: row.last_streak_date,
+    };
+    ({ error } = await supabase.from("profiles").upsert(fallback, { onConflict: "id" }));
+  }
   if (error) {
     console.error("[retentiOoo] save profile:", error.message);
     return { ok: false, error: error.message };
@@ -182,10 +210,23 @@ export async function ensureProfileRow() {
   const name =
     meta.full_name || meta.name || user.email?.split("@")[0] || "Player";
 
-  await supabase.from("profiles").upsert({
+  const row = {
     id: user.id,
     display_name: name,
     avatar: "unicorn",
+    profile_pic_url: null,
+    email: user.email || null,
+    email_visible: false,
+    profile_public: true,
     progress: {},
-  });
+  };
+  const { error } = await supabase.from("profiles").upsert(row);
+  if (error?.code === "42703") {
+    await supabase.from("profiles").upsert({
+      id: user.id,
+      display_name: name,
+      avatar: "unicorn",
+      progress: {},
+    });
+  }
 }

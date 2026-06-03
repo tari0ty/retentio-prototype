@@ -13,6 +13,7 @@ import {
   applyProgressBlob,
   checkProfilesReady,
   getUserId,
+  getUserEmail,
 } from "./js/auth.js";
 import {
   checkMultiplayerReady,
@@ -32,7 +33,10 @@ import {
 import {
   ensureFriendCode,
   fetchFriendsList,
+  fetchIncomingFriendRequests,
   addFriendByCode,
+  acceptFriendRequest,
+  rejectFriendRequest,
   removeFriend,
   fetchFriendMessages,
   sendFriendMessage,
@@ -102,6 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let rankedCountdownTimer = null;
   let rankedVoteConfirmed = false;
   let liveRankedActive = false;
+  let rankedSettings = { tiles: 16, pairs: 8, timeLimit: 120, maxFlips: 40 };
 
   // ----------------------------------------------------------
   //  PROFILE
@@ -122,7 +127,10 @@ document.addEventListener("DOMContentLoaded", function () {
     lastStreakDate:null,
     chatStreak:0,
     lastChatDate:null,
-    bestScores:{}
+    bestScores:{},
+    profilePicUrl:"",
+    emailVisible:false,
+    profilePublic:true
   };
   let isLoggedIn = false;
   let cachedFriends = [];
@@ -252,6 +260,71 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function renderProfileImage(el, profile, fallback = "Profile") {
+    if (!el) return;
+    const url = profile?.profile_pic_url || profile?.profilePicUrl || "";
+    if (url) {
+      el.innerHTML = `<img src="${escapeChat(url)}" alt="">`;
+      el.classList.add("has-profile-pic");
+    } else {
+      el.textContent = AVATAR_EMOJI[profile?.avatar] || fallback;
+      el.classList.remove("has-profile-pic");
+    }
+  }
+
+  function readImageFile(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return resolve("");
+      if (!file.type?.startsWith("image/")) return reject(new Error("Choose an image file."));
+      if (file.size > 850000) return reject(new Error("Please choose an image under 850 KB."));
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Could not read that image."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function setProfilePhotoFromInput(input) {
+    try {
+      const url = await readImageFile(input.files?.[0]);
+      if (!url) return;
+      activeProfile.profilePicUrl = url;
+      saveProfile();
+      renderProfileImage(document.getElementById("profile-avatar"), activeProfile, "Profile");
+    } catch (err) {
+      alert(err.message || "Could not use that photo.");
+    } finally {
+      if (input) input.value = "";
+    }
+  }
+
+  function getVoteSliderValues() {
+    const tiles = Number(document.getElementById("vote-tiles-slider")?.value || 16);
+    const timeLimit = Number(document.getElementById("vote-time-slider")?.value || 120);
+    const maxFlips = Number(document.getElementById("vote-flips-slider")?.value || 40);
+    return { tiles, pairs: tiles / 2, timeLimit, maxFlips };
+  }
+
+  function updateVoteSliderLabels() {
+    const v = getVoteSliderValues();
+    document.getElementById("vote-tiles-value").textContent = String(v.tiles);
+    document.getElementById("vote-time-value").textContent = `${v.timeLimit}s`;
+    document.getElementById("vote-flips-value").textContent = String(v.maxFlips);
+  }
+
+  function settingsFromRoom(room) {
+    const votes = room?.votes || {};
+    const settingsVotes = Array.isArray(votes.settings) ? votes.settings : [];
+    const avg = (key, fallback) => {
+      if (!settingsVotes.length) return fallback;
+      return Math.round(settingsVotes.reduce((sum, item) => sum + Number(item[key] || fallback), 0) / settingsVotes.length);
+    };
+    const tiles = Math.max(6, Math.min(16, Math.round((room?.tile_count || avg("tiles", 16)) / 2) * 2));
+    const timeLimit = Math.max(60, Math.min(180, room?.time_limit || avg("timeLimit", 120)));
+    const maxFlips = Math.max(12, Math.min(60, room?.max_flips || avg("maxFlips", 40)));
+    return { tiles, pairs: tiles / 2, timeLimit, maxFlips };
+  }
+
   async function mergeServerProfileIntoLocal() {
     await ensureProfileRow();
     const row = await fetchServerProfile();
@@ -261,6 +334,9 @@ document.addEventListener("DOMContentLoaded", function () {
       activeProfile.nickname = row.display_name;
     }
     if (row.avatar) activeProfile.avatar = row.avatar;
+    if (row.profile_pic_url) activeProfile.profilePicUrl = row.profile_pic_url;
+    if (row.email_visible != null) activeProfile.emailVisible = !!row.email_visible;
+    if (row.profile_public != null) activeProfile.profilePublic = !!row.profile_public;
     if (row.platform_streak != null) {
       activeProfile.platformStreak = row.platform_streak;
     }
@@ -274,6 +350,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!activeProfile.unlockedLevels) activeProfile.unlockedLevels = {1:1,2:1,3:1,4:1,5:1};
     if (!activeProfile.bestStats) activeProfile.bestStats = {};
     if (!activeProfile.bestScores) activeProfile.bestScores = {};
+    if (activeProfile.emailVisible == null) activeProfile.emailVisible = false;
+    if (activeProfile.profilePublic == null) activeProfile.profilePublic = true;
 
     saveProfile();
   }
@@ -725,6 +803,7 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const code = await ensureFriendCode();
       codeEl.textContent = code || "——";
+      await renderFriendRequests();
       await renderFriendsList();
     } catch (err) {
       console.error(err);
@@ -757,6 +836,14 @@ document.addEventListener("DOMContentLoaded", function () {
         <button type="button" class="chat-send-btn friend-chat-open-btn" data-id="${f.id}">Chat</button>
         <button type="button" class="back-btn friend-remove-btn" data-id="${f.id}">Remove</button>
       `;
+      row.querySelector(".friend-row-code").textContent = "Friend";
+      renderProfileImage(row.querySelector(".friend-row-emoji"), f, "Profile");
+      const profileBtn = document.createElement("button");
+      profileBtn.type = "button";
+      profileBtn.className = "back-btn friend-profile-open-btn";
+      profileBtn.textContent = "Profile";
+      profileBtn.addEventListener("click", () => openFriendProfile(f));
+      row.insertBefore(profileBtn, row.querySelector(".friend-chat-open-btn"));
       row.querySelector(".friend-chat-open-btn").addEventListener("click", () => {
         openFriendChat(f);
       });
@@ -769,11 +856,67 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  async function renderFriendRequests() {
+    const card = document.getElementById("friend-requests-card");
+    const list = document.getElementById("friend-requests-list");
+    if (!card || !list) return;
+    const requests = await fetchIncomingFriendRequests();
+    card.classList.toggle("hidden-layer", !requests.length);
+    list.innerHTML = "";
+    requests.forEach((req) => {
+      const p = req.profile || {};
+      const row = document.createElement("div");
+      row.className = "friend-row";
+      row.innerHTML = `
+        <span class="friend-row-emoji"></span>
+        <div class="friend-row-info">
+          <div class="friend-row-name">${escapeChat(p.display_name || "Player")}</div>
+          <div class="friend-row-code">Wants to be friends</div>
+        </div>
+        <button type="button" class="chat-send-btn friend-accept-btn">Accept</button>
+        <button type="button" class="back-btn friend-reject-btn">Not now</button>
+      `;
+      renderProfileImage(row.querySelector(".friend-row-emoji"), p, "Profile");
+      row.querySelector(".friend-accept-btn").addEventListener("click", async () => {
+        await acceptFriendRequest(req.id);
+        await renderFriendRequests();
+        await renderFriendsList();
+      });
+      row.querySelector(".friend-reject-btn").addEventListener("click", async () => {
+        await rejectFriendRequest(req.id);
+        await renderFriendRequests();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function openFriendProfile(friend) {
+    const panel = document.getElementById("friend-profile-panel");
+    if (!panel) return;
+    renderProfileImage(document.getElementById("friend-profile-pic"), friend, "Profile");
+    document.getElementById("friend-profile-name").textContent = friend.display_name || "Player";
+    const details = document.getElementById("friend-profile-details");
+    const publicOn = friend.profile_public !== false;
+    const progress = friend.progress || {};
+    const best = progress.bestScores?.matchbox || null;
+    const email = friend.email_visible ? friend.email : "";
+    document.getElementById("friend-profile-meta").textContent = publicOn ? "Public profile" : "Private profile";
+    details.innerHTML = publicOn
+      ? `
+        <p><strong>Username:</strong> ${escapeChat(friend.display_name || "Player")}</p>
+        ${email ? `<p><strong>Email:</strong> ${escapeChat(email)}</p>` : ""}
+        <p><strong>Matchbox:</strong> ${best ? `${best.flips} flips · ${formatTime(best.time)}` : "No public score yet"}</p>
+      `
+      : `<p>This friend has hidden their profile information.</p>`;
+    panel.classList.remove("hidden-layer");
+  }
+
   function closeFriendChat() {
     activeFriendChat = null;
     friendChatMessageIds = new Set();
     unsubscribeFromFriendMessages();
     document.getElementById("friend-chat-panel")?.classList.add("hidden-layer");
+    document.getElementById("friend-profile-panel")?.classList.add("hidden-layer");
     const box = document.getElementById("friend-chat-messages");
     if (box) box.innerHTML = "";
     const input = document.getElementById("friend-chat-input");
@@ -814,6 +957,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!panel || !box) return;
 
     if (avatar) avatar.textContent = AVATAR_EMOJI[friend.avatar] || "👤";
+    renderProfileImage(avatar, friend, "Profile");
     if (name) name.textContent = friend.display_name || "Friend";
     friendChatMessageIds = new Set();
     box.innerHTML = `<p class="friends-empty friend-chat-loading">Loading chat...</p>`;
@@ -861,7 +1005,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const msg = document.getElementById("add-friend-msg");
     try {
       const added = await addFriendByCode(input.value);
-      msg.textContent = `Added ${added.display_name || "friend"}!`;
+      msg.textContent = `Request sent to ${added.display_name || "friend"}!`;
       msg.className = "friends-msg ok";
       input.value = "";
       await renderFriendsList();

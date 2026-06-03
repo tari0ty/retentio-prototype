@@ -40,8 +40,9 @@ export async function fetchFriendsList() {
 
   const { data: links, error } = await sb
     .from("friendships")
-    .select("user_id, friend_id, created_at")
-    .or(`user_id.eq.${uid},friend_id.eq.${uid}`);
+    .select("user_id, friend_id, created_at, status")
+    .or(`user_id.eq.${uid},friend_id.eq.${uid}`)
+    .eq("status", "accepted");
   if (error) throw error;
   if (!links?.length) return [];
 
@@ -51,10 +52,34 @@ export async function fetchFriendsList() {
 
   const { data: profiles, error: pErr } = await sb
     .from("profiles")
-    .select("id, display_name, avatar, friend_code")
+    .select("id, display_name, avatar, friend_code, profile_pic_url, email, email_visible, profile_public, progress")
     .in("id", friendIds);
   if (pErr) throw pErr;
   return profiles || [];
+}
+
+export async function fetchIncomingFriendRequests() {
+  const sb = getSupabase();
+  const uid = getUserId();
+  if (!sb || !uid) return [];
+
+  const { data: requests, error } = await sb
+    .from("friendships")
+    .select("id, user_id, created_at, status")
+    .eq("friend_id", uid)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  if (!requests?.length) return [];
+
+  const requesterIds = requests.map((r) => r.user_id);
+  const { data: profiles, error: pErr } = await sb
+    .from("profiles")
+    .select("id, display_name, avatar, profile_pic_url")
+    .in("id", requesterIds);
+  if (pErr) throw pErr;
+  const byId = new Map((profiles || []).map((p) => [p.id, p]));
+  return requests.map((r) => ({ ...r, profile: byId.get(r.user_id) || {} }));
 }
 
 export async function addFriendByCode(code) {
@@ -76,26 +101,56 @@ export async function addFriendByCode(code) {
 
   const { data: existingA } = await sb
     .from("friendships")
-    .select("id")
+    .select("id, status")
     .eq("user_id", uid)
     .eq("friend_id", target.id)
     .maybeSingle();
   const { data: existingB } = await sb
     .from("friendships")
-    .select("id")
+    .select("id, status")
     .eq("user_id", target.id)
     .eq("friend_id", uid)
     .maybeSingle();
   if (existingA || existingB) {
-    throw new Error("Already friends with " + (target.display_name || "this player") + ".");
+    const existing = existingA || existingB;
+    throw new Error(
+      existing.status === "pending"
+        ? "Friend request is already pending."
+        : "Already friends with " + (target.display_name || "this player") + "."
+    );
   }
 
   const { error: insErr } = await sb.from("friendships").insert({
     user_id: uid,
     friend_id: target.id,
+    status: "pending",
   });
   if (insErr) throw insErr;
   return target;
+}
+
+export async function acceptFriendRequest(requestId) {
+  const sb = getSupabase();
+  const uid = getUserId();
+  if (!sb || !uid || !requestId) return;
+  const { error } = await sb
+    .from("friendships")
+    .update({ status: "accepted", accepted_at: new Date().toISOString() })
+    .eq("id", requestId)
+    .eq("friend_id", uid);
+  if (error) throw error;
+}
+
+export async function rejectFriendRequest(requestId) {
+  const sb = getSupabase();
+  const uid = getUserId();
+  if (!sb || !uid || !requestId) return;
+  const { error } = await sb
+    .from("friendships")
+    .delete()
+    .eq("id", requestId)
+    .eq("friend_id", uid);
+  if (error) throw error;
 }
 
 export async function removeFriend(friendUserId) {
