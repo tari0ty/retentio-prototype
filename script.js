@@ -560,7 +560,24 @@ document.addEventListener("DOMContentLoaded", function () {
     const gridEl = document.getElementById("hub-games-grid");
     if (gridEl) {
       gridEl.innerHTML = "";
-      GAMES.forEach(g => gridEl.appendChild(buildHubTile(g, false)));
+      GAMES.forEach((g, i) => {
+        if (i === 4) {
+          const adBox = document.createElement("div");
+          adBox.className = "manual-ad-box hub-ad-box";
+          adBox.innerHTML = `
+            <video autoplay loop muted playsinline class="bg-video">
+              <source src="./ads/Ad.mp4" type="video/mp4">
+            </video>
+            <p class="ad-label">To place your Ad</p>
+            <a href="https://wa.me/2348000000000" class="ad-cta" target="_blank" rel="noopener noreferrer">
+              <span class="ad-text">Contact</span>
+              <span class="brand-circle"><img src="images/logo.png" alt="retentiOo logo" class="circle-img"></span>
+            </a>
+          `;
+          gridEl.appendChild(adBox);
+        }
+        gridEl.appendChild(buildHubTile(g, false));
+      });
     }
   }
 
