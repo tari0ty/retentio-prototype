@@ -52,7 +52,7 @@ export async function fetchFriendsList() {
 
   const { data: profiles, error: pErr } = await sb
     .from("profiles")
-    .select("id, display_name, avatar, friend_code, profile_pic_url, email, email_visible, profile_public, progress")
+    .select("id, display_name, avatar, friend_code, profile_pic_url, email, email_visible, profile_public, progress, updated_at")
     .in("id", friendIds);
   if (pErr) throw pErr;
   return profiles || [];

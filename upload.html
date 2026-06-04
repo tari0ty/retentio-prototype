@@ -9,6 +9,27 @@
 <body>
   <div class="upload-wrapper">
     <h1>Place Your Ad</h1>
+    <p class="hint">Use this admin panel to turn the manual ad on/off and set the video URL that should appear in the hub. For production, upload the video to Supabase Storage and save the returned public URL here.</p>
+
+    <section class="admin-ad-panel" style="margin-bottom:18px; padding:14px; border:3px solid #1f1745; border-radius:18px; background:#fff; box-shadow: 2px 2px 0 #1f1745;">
+      <label style="display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:8px;">
+        <input id="ad-enabled" type="checkbox" checked>
+        Show sponsored ad on the hub
+      </label>
+
+      <label for="ad-video-url">Video URL or file path</label>
+      <input id="ad-video-url" type="text" placeholder="https://.../your-ad.mp4" />
+
+      <input type="file" id="ad-video-file" accept="video/*" style="display:none">
+      <button id="pick-video" type="button" style="margin-top:8px;">Choose video file</button>
+
+      <label for="ad-contact" style="margin-top:10px;">WhatsApp number</label>
+      <input id="ad-contact" type="text" placeholder="2348135232889" />
+
+      <button id="save-ad-settings" type="button" style="margin-top:12px;">Save ad settings</button>
+      <p id="ad-settings-status" class="hint" style="margin-top:8px; min-height:1.2em;"></p>
+    </section>
+
     <p class="hint">Drop an image here or click to select. Enter the destination URL and generate an embeddable snippet.</p>
 
     <div id="drop-area" class="drop-area">

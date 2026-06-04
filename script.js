@@ -56,16 +56,21 @@ document.addEventListener("DOMContentLoaded", function () {
   const LEGACY_STORAGE_KEY = "retentiOo_profile";
 
   const GAMES = [
-    { id: "matchbox",       title: "Matchbox",       emoji: "🃏", category: "Memory",    status: "live", featured: true },
-    { id: "fraction-pizza", title: "Fraction Pizza", emoji: "🍕", category: "Math",      status: "soon", featured: true },
-    { id: "word-hive",      title: "Word Hive",      emoji: "🐝", category: "Reading",   status: "soon", featured: true },
-    { id: "logic-locks",    title: "Logic Locks",    emoji: "🔐", category: "Logic",     status: "soon", featured: false },
-    { id: "lab-snap",       title: "Lab Snap",       emoji: "🔬", category: "Science",   status: "soon", featured: true },
-    { id: "globe-hopper",   title: "Globe Hopper",   emoji: "🌍", category: "Geography", status: "soon", featured: false },
-    { id: "rhythm-roots",   title: "Rhythm Roots",   emoji: "🎵", category: "Music",     status: "soon", featured: false },
-    { id: "code-critters",  title: "Code Critters",  emoji: "🐛", category: "Coding",    status: "soon", featured: false },
-    { id: "paint-guess",    title: "Paint & Guess",  emoji: "🎨", category: "Art",       status: "soon", featured: false },
-    { id: "time-trek",      title: "Time Trek",      emoji: "⏳", category: "History",   status: "soon", featured: false },
+    { id: "matchbox",        title: "Matchbox",        emoji: "🃏", cover: "gamesLogo/MatchBox.png", category: "Memory",    status: "live",   featured: true  },
+    { id: "fraction-pizza",  title: "Fraction Pizza",  emoji: "🍕", category: "Math",      status: "soon",   featured: true  },
+    { id: "word-hive",       title: "Word Hive",       emoji: "🐝", category: "Reading",   status: "soon",   featured: true  },
+    { id: "lab-snap",        title: "Lab Snap",        emoji: "🔬", category: "Science",   status: "soon",   featured: true  },
+    { id: "logic-locks",     title: "Logic Locks",     emoji: "🔐", category: "Logic",     status: "soon",   featured: false },
+    { id: "globe-hopper",    title: "Globe Hopper",    emoji: "🌍", category: "Geography", status: "soon",   featured: false },
+    { id: "rhythm-roots",    title: "Rhythm Roots",    emoji: "🎵", category: "Music",     status: "soon",   featured: false },
+    { id: "code-critters",   title: "Code Critters",   emoji: "🐛", category: "Coding",    status: "soon",   featured: false },
+    { id: "paint-guess",     title: "Paint & Guess",   emoji: "🎨", category: "Art",       status: "soon",   featured: false },
+    { id: "time-trek",       title: "Time Trek",       emoji: "⏳", category: "History",   status: "soon",   featured: false },
+    { id: "starlight-sprint", title: "Starlight Sprint", emoji: "🌟", category: "Space",   status: "soon",   featured: false },
+    { id: "puzzle-parade",    title: "Puzzle Parade",   emoji: "🧩", category: "Puzzle",  status: "soon",   featured: false },
+    { id: "rainbow-rally",    title: "Rainbow Rally",   emoji: "🌈", category: "Colors",  status: "soon",   featured: false },
+    { id: "treasure-trail",   title: "Treasure Trail",  emoji: "🗺️", category: "Adventure", status: "soon", featured: false },
+    { id: "pixel-party",     title: "Pixel Party",     emoji: "🎮", category: "Creative", status: "soon",   featured: false },
   ];
 
   const HUB_CATEGORIES = ["All", "Memory", "Math", "Reading", "Logic", "Science", "Geography", "Music", "Coding", "Art", "History"];
@@ -553,31 +558,41 @@ document.addEventListener("DOMContentLoaded", function () {
     const featuredEl = document.getElementById("hub-featured-row");
     if (featuredEl) {
       featuredEl.innerHTML = "";
-      const lastGame = GAMES.find(g => g.id === activeProfile.lastGame) || GAMES.find(g => g.id === "matchbox");
-      if (lastGame) featuredEl.appendChild(buildHubTile(lastGame, true));
+      const featuredGames = GAMES.filter(g => g.featured || g.id === activeProfile.lastGame || g.id === "matchbox");
+      featuredGames.slice(0, 4).forEach(game => featuredEl.appendChild(buildHubTile(game, true)));
     }
 
     const gridEl = document.getElementById("hub-games-grid");
+    const adSlot = document.getElementById("hub-ad-slot");
+    const adEnabled = localStorage.getItem("manualAdEnabled") !== "false";
+    const savedAdVideoUrl = localStorage.getItem("manualAdVideoUrl");
+    const adVideoUrl = (savedAdVideoUrl && !savedAdVideoUrl.startsWith("data:") && !savedAdVideoUrl.startsWith("blob:"))
+      ? savedAdVideoUrl
+      : "./ads/Ad.mp4";
+    const adContact = (localStorage.getItem("manualAdContact") || "2348135232889").replace(/\D/g, "");
+
+    if (adSlot) {
+      adSlot.innerHTML = "";
+      if (adEnabled) {
+        const adBox = document.createElement("div");
+        adBox.className = "manual-ad-box hub-ad-box";
+        adBox.innerHTML = `
+          <video autoplay loop muted playsinline class="bg-video">
+            <source src="${adVideoUrl}" type="video/mp4">
+          </video>
+          <p class="ad-label">To place your Ad</p>
+          <a href="https://wa.me/${adContact}" class="ad-cta" target="_blank" rel="noopener noreferrer">
+            <span class="ad-text">Contact</span>
+            <span class="brand-circle"><img src="images/logo.png" alt="retentiOo logo" class="circle-img"></span>
+          </a>
+        `;
+        adSlot.appendChild(adBox);
+      }
+    }
+
     if (gridEl) {
       gridEl.innerHTML = "";
-      GAMES.forEach((g, i) => {
-        if (i === 4) {
-          const adBox = document.createElement("div");
-          adBox.className = "manual-ad-box hub-ad-box";
-          adBox.innerHTML = `
-            <video autoplay loop muted playsinline class="bg-video">
-              <source src="./ads/Ad.mp4" type="video/mp4">
-            </video>
-            <p class="ad-label">To place your Ad</p>
-            <a href="https://wa.me/2348000000000" class="ad-cta" target="_blank" rel="noopener noreferrer">
-              <span class="ad-text">Contact</span>
-              <span class="brand-circle"><img src="images/logo.png" alt="retentiOo logo" class="circle-img"></span>
-            </a>
-          `;
-          gridEl.appendChild(adBox);
-        }
-        gridEl.appendChild(buildHubTile(g, false));
-      });
+      GAMES.forEach((g) => gridEl.appendChild(buildHubTile(g, false)));
     }
   }
 
@@ -601,11 +616,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function buildHubTile(game, isFeatured) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `hub-game-tile ${game.status === "soon" ? "soon-tile" : ""} ${isFeatured ? "featured-tile" : ""}`;
+    btn.className = `hub-game-tile ${game.status === "soon" ? "soon-tile" : ""} ${isFeatured ? "featured-tile" : ""} ${game.id === "matchbox" ? "matchbox-cover-tile" : ""}`.trim();
     const progress = game.id === "matchbox" ? getMatchboxProgressLabel() : "Soon";
+    const coverMarkup = game.cover
+      ? `<img class="hub-tile-cover" src="${game.cover}" alt="${game.title} cover">`
+      : `<span class="hub-tile-emoji">${game.emoji}</span>`;
     btn.innerHTML = `
       <span class="hub-tile-badge ${game.status === "soon" ? "soon-badge" : ""}">${game.status === "live" ? "PLAY" : "SOON"}</span>
-      <span class="hub-tile-emoji">${game.emoji}</span>
+      ${coverMarkup}
       <span class="hub-tile-title">${game.title}</span>
       <span class="hub-tile-progress">${progress}</span>
     `;
@@ -798,6 +816,40 @@ document.addEventListener("DOMContentLoaded", function () {
     if (activeProfile.nickname) launchProfileScreen();
     else if (isAuthenticated()) showOnboardingQuiz("hub");
     else document.getElementById("auth-modal").classList.add("active");
+  });
+
+  document.querySelector(".mobile-bottom-dock")?.addEventListener("click", (event) => {
+    const btn = event.target.closest(".dock-chip");
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+
+    if (action === "home") {
+      launchHub();
+      return;
+    }
+
+    if (action === "games") {
+      launchHub();
+      document.getElementById("hub-games-grid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (action === "profile") {
+      if (activeProfile.nickname) launchProfileScreen();
+      else if (isAuthenticated()) showOnboardingQuiz("hub");
+      else document.getElementById("auth-modal").classList.add("active");
+      return;
+    }
+
+    if (action === "friends") {
+      launchFriendsScreen();
+      return;
+    }
+
+    if (action === "play") {
+      launchGameMode();
+    }
   });
 
   async function launchFriendsScreen() {
@@ -1393,6 +1445,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("current-level-label").textContent=level;
     animateNavLogo("nav-logo-link");
     initNavToggle();
+  initMobileGameCanvas();
     gameScreen.classList.remove("hidden-layer");
     activeProfile.currentQuest = 1;
     activeProfile.currentLevel = level;
@@ -2436,6 +2489,91 @@ document.addEventListener("DOMContentLoaded", function () {
     toggle.parentNode.replaceChild(newToggle,toggle);
     newToggle.addEventListener("click",()=>links.classList.toggle("open"));
     links.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>links.classList.remove("open")));
+  }
+
+  function initMobileGameCanvas(){
+    const canvas=document.getElementById("mobile-game-canvas");
+    if(!canvas || canvas.dataset.initialized) return;
+    canvas.dataset.initialized="true";
+
+    const ctx=canvas.getContext("2d");
+    const balls=[
+      {x:80,y:70,r:18,color:"#ffcf56",vx:1.8,vy:-1.2},
+      {x:150,y:110,r:20,color:"#8b7cff",vx:-1.5,vy:1.1},
+      {x:240,y:80,r:16,color:"#57f2ff",vx:1.2,vy:-1.8},
+      {x:320,y:130,r:22,color:"#ff7dd9",vx:-1.7,vy:-1.0},
+    ];
+
+    let frame=0;
+    const resize=()=>{
+      const ratio=Math.min(window.devicePixelRatio||1,2);
+      const {width,height}=canvas.getBoundingClientRect();
+      canvas.width=Math.floor(width*ratio);
+      canvas.height=Math.floor(height*ratio);
+      ctx.setTransform(ratio,0,0,ratio,0,0);
+      ctx.clearRect(0,0,width,height);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    function draw(){
+      const {width,height}=canvas.getBoundingClientRect();
+      ctx.clearRect(0,0,width,height);
+      const bg=ctx.createLinearGradient(0,0,width,height);
+      bg.addColorStop(0,"rgba(18, 16, 42, 0.98)");
+      bg.addColorStop(0.55,"rgba(73, 66, 196, 0.95)");
+      bg.addColorStop(1,"rgba(12, 12, 30, 0.98)");
+      ctx.fillStyle=bg;
+      ctx.fillRect(0,0,width,height);
+
+      ctx.save();
+      for(let i=0;i<3;i++){
+        ctx.globalAlpha=0.08+i*0.04;
+        ctx.fillStyle=["#ffcf56","#7b79ff","#57f2ff"][i];
+        ctx.beginPath();
+        ctx.arc(width*(0.18+i*0.25), height*(0.18+i*0.14), 28+i*8, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      balls.forEach((ball, index) => {
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+        if (ball.x < ball.r || ball.x > width - ball.r) ball.vx *= -1;
+        if (ball.y < ball.r || ball.y > height - ball.r) ball.vy *= -1;
+        const glow=ctx.createRadialGradient(ball.x,ball.y,2,ball.x,ball.y,ball.r*2.2);
+        glow.addColorStop(0,"rgba(255,255,255,0.95)");
+        glow.addColorStop(0.35,ball.color);
+        glow.addColorStop(1,"rgba(255,255,255,0.02)");
+        ctx.fillStyle=glow;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r*1.8, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle=ball.color;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle="rgba(255,255,255,0.7)";
+        ctx.lineWidth=2;
+        ctx.stroke();
+        const pulse = 1 + Math.sin(frame*0.05 + index)*0.08;
+        ctx.globalAlpha=0.25;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r*pulse, 0, Math.PI*2);
+        ctx.strokeStyle=ball.color;
+        ctx.stroke();
+        ctx.globalAlpha=1;
+      });
+
+      ctx.fillStyle="rgba(255,255,255,0.85)";
+      ctx.font="700 12px Poppins, sans-serif";
+      ctx.fillText("retentio • bounce", 14, 18);
+      ctx.fillText("score +1 every ripple", width-120, 18);
+      frame++;
+      requestAnimationFrame(draw);
+    }
+
+    draw();
   }
 
   // ----------------------------------------------------------

@@ -50,9 +50,35 @@ body {
   overflow-x: hidden;
 }
 
-::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: rgba(101,99,255,0.05); border-radius: 100px; }
-::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 100px; }
+/* 1. Base Setup for the Entire Site / Scrollable Elements */
+::-webkit-scrollbar { 
+  width: 10px;               /* Width of vertical scrollbar */
+  height: 8px;               /* Height of horizontal scrollbar (Crucial for your layout!) */
+}
+
+/* 2. The Background Track Path */
+::-webkit-scrollbar-track { 
+  background: rgba(101, 99, 255, 0.05); 
+  border-radius: 100px; 
+}
+
+/* 3. The Movable Part (The Thumb) */
+::-webkit-scrollbar-thumb { 
+  background: #ffffff;       /* Pure white movable part */
+  border-radius: 100px; 
+  border: 2px solid rgba(101, 99, 255, 0.05); /* Adds a subtle gap look */
+}
+
+/* 4. Optional Hover Effect (Keeps it white but slightly dimmer/brighter) */
+::-webkit-scrollbar-thumb:hover {
+  background: #f0f0f0; 
+}
+
+/* 5. Support for Firefox (Webkit codes above don't work there) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff rgba(101, 99, 255, 0.05);
+}
 
 .hidden-layer { display: none !important; }
 
@@ -750,10 +776,54 @@ body {
   padding: 76px 14px 40px;
 }
 
+@media (min-width: 901px) {
+  #games-hub-screen {
+    padding: 96px 24px 56px;
+    background:
+      radial-gradient(circle at top, rgba(255,255,255,0.18), transparent 28%),
+      linear-gradient(140deg, #2b1f68 0%, #5b59ff 48%, #8f8cff 100%);
+  }
+
+  .hub-inner {
+    width: 100%;
+    max-width: 1600px;
+  }
+
+  .hub-top {
+    margin-bottom: 18px;
+  }
+
+  .hub-section {
+    background: rgba(255,255,255,0.12);
+    border: 3px solid rgba(255,255,255,0.22);
+    border-radius: 24px;
+    padding: 14px;
+    box-shadow: var(--hard-md);
+    backdrop-filter: blur(6px);
+  }
+
+  .hub-section:first-of-type {
+    background: linear-gradient(160deg, rgba(255,255,255,0.18), rgba(255,247,196,0.12));
+    border-color: rgba(255, 236, 146, 0.8);
+  }
+
+  .hub-section:last-of-type {
+    background: linear-gradient(160deg, rgba(18, 14, 50, 0.18), rgba(255,255,255,0.10));
+    border-color: rgba(199, 194, 255, 0.75);
+  }
+}
+
+
 .hub-inner {
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
+}
+
+@media (min-width: 901px) {
+  .hub-inner {
+    max-width: 1600px;
+  }
 }
 
 .hub-top {
@@ -886,17 +956,88 @@ body {
 }
 
 .hub-featured-row {
+  padding: 10px 3px;
   display: flex;
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 6px;
   scrollbar-width: thin;
+  
 }
 
 .hub-games-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  max-height: 56vh;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
+  .hub-games-grid {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 220px);
+    gap: 14px;
+  }
+
+  .hub-games-grid .hub-game-tile {
+    min-height: 500px;
+    padding: 16px 12px;
+  }
+
+  .manual-ad-box,
+  .hub-ad-box {
+    min-height: 500px;
+    height: 500px;
+    box-sizing: border-box;
+  }
+}
+
+@media (min-width: 901px) {
+  .hub-featured-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow-x: visible;
+    gap: 14px;
+  }
+
+  .hub-featured-row .hub-game-tile {
+    min-height: 148px;
+  }
+
+  .hub-games-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: 8px;
+  }
+
+  .hub-games-grid .hub-game-tile {
+    min-height: 500px;
+  }
+
+  .hub-ad-slot {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .hub-ad-slot .manual-ad-box,
+  .hub-ad-slot .hub-ad-box {
+    width: 100%;
+    max-width: 100%;
+    min-height: 500px;
+    height: 500px;
+    margin: 0;
+    box-sizing: border-box;
+  }
 }
 
 .hub-game-tile {
@@ -936,6 +1077,27 @@ body {
 .hub-game-tile.soon-tile .hub-tile-progress { color: #3d3a6b; }
 
 .hub-tile-emoji { font-size: 2.4rem; line-height: 1; }
+
+.hub-tile-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 10px;
+}
+
+.hub-game-tile.matchbox-cover-tile {
+  padding: 0;
+  overflow: hidden;
+  justify-content: center;
+}
+
+.hub-game-tile.matchbox-cover-tile .hub-tile-badge,
+.hub-game-tile.matchbox-cover-tile .hub-tile-title,
+.hub-game-tile.matchbox-cover-tile .hub-tile-progress {
+  display: none;
+}
 
 .hub-tile-title {
   font-size: 0.82rem;
@@ -1467,6 +1629,10 @@ body {
   box-shadow: var(--hard-lg);
 }
 
+.mobile-feed-hero {
+  display: none;
+}
+
 .stats-container {
   display: flex;
   justify-content: space-between;
@@ -1551,11 +1717,111 @@ body {
   75%       { transform: translateX(10px); }
 }
 
+@media (max-width: 900px) {
+  body { padding-bottom: 92px; }
+  #game-screen { padding-bottom: 18px; }
+  .mobile-feed-hero { display: block; width: 100%; max-width: 420px; margin: 10px auto 0; }
+  .mobile-feed-card {
+    background: rgba(255,255,255,0.96);
+    border: 4px solid var(--text-dark);
+    border-radius: 24px;
+    box-shadow: var(--hard-lg);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .mobile-feed-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .mobile-pill { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.68rem; font-weight: 800; color: var(--purple-dark); }
+  .mobile-feed-header-row h2 { font-family: var(--font-display); font-size: 1.05rem; color: var(--text-dark); }
+  .mobile-live-dot { font-size: 0.78rem; font-weight: 800; color: #0b8a45; background: #e9fff4; border: 2px solid #1d7c49; border-radius: 999px; padding: 6px 8px; }
+  .mobile-canvas-shell { position: relative; border-radius: 18px; overflow: hidden; border: 3px solid var(--text-dark); background: linear-gradient(160deg, #1b1447, #5c59ff 55%, #1f1c42); min-height: 180px; }
+  .mobile-canvas-shell canvas { width: 100%; height: 100%; display: block; min-height: 180px; }
+  .mobile-grow-badge { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); border: 2px solid var(--text-dark); border-radius: 999px; padding: 6px 8px; font-size: 0.72rem; font-weight: 800; color: var(--purple-dark); box-shadow: var(--hard-sm); }
+  .mobile-control-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: space-between; padding: 10px; pointer-events: none; }
+  .control-btn { pointer-events: auto; width: 42px; height: 42px; border: 3px solid var(--text-dark); border-radius: 12px; background: rgba(255,255,255,0.92); color: var(--text-dark); font-size: 1rem; font-weight: 900; box-shadow: var(--hard-sm); }
+  .control-up { margin: 0 auto; }
+  .mobile-feed-caption { display: flex; flex-direction: column; gap: 2px; }
+  .mobile-feed-caption span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--purple-dark); font-weight: 800; }
+  .mobile-feed-caption strong { font-size: 0.92rem; color: var(--text-dark); line-height: 1.35; }
+  .wrapper, .how-to-play { display: none; }
+}
+
 @media (max-width: 420px) {
   .cards { gap: 6px; }
   .card .front-view span { font-size: 32px; }
   .wrapper { padding: 14px; }
   .stats-container { padding: 8px; }
+}
+
+.mobile-bottom-dock {
+  display: flex;
+}
+
+@media (min-width: 901px) {
+  .mobile-bottom-dock { display: none; }
+}
+
+@media (max-width: 900px) {
+  .mobile-bottom-dock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 200000;
+    padding: 8px;
+    border: 3px solid var(--text-dark);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.96);
+    box-shadow: var(--hard-md);
+    backdrop-filter: blur(10px);
+  }
+  .dock-chip {
+    flex: 1;
+    min-width: 0;
+    border: 2px solid var(--text-dark);
+    border-radius: 14px;
+    background: #f2f1ff;
+    color: var(--text-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 1rem;
+    font-weight: 900;
+    box-shadow: var(--hard-sm);
+    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    touch-action: manipulation;
+    will-change: transform;
+  }
+
+  .dock-chip:active {
+    transform: translateY(2px) scale(0.97);
+    box-shadow: 0 2px 0 var(--text-dark);
+    filter: brightness(0.98);
+  }
+
+  .dock-chip:focus-visible {
+    outline: 3px solid #5a3ce8;
+    outline-offset: 2px;
+  }
+  .dock-logo {
+    flex: 0 0 44px;
+    background: linear-gradient(145deg, #8a84ff, #6563ff);
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 1rem;
+  }
+  .dock-create {
+    flex: 0 0 54px;
+    background: linear-gradient(145deg, #7d63ff, #5a3ce8);
+    color: var(--white);
+    font-size: 1.2rem;
+  }
 }
 
 /* ============================================================
@@ -3127,4 +3393,63 @@ body {
   width: auto !important;
   max-width: 100% !important;
   margin: 0 !important;
+}
+
+.hub-friends-online-pill {
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+.hub-friends-online-pill:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.app-nav-btn {
+  position: relative;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #e53e3e;
+  color: var(--white);
+  font-size: 0.7rem;
+  font-weight: 900;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--white);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.profile-bio-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 3px solid var(--text-dark);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-top: 4px;
+  box-sizing: border-box;
+  background: var(--white);
+  color: var(--text-dark);
+}
+
+.profile-bio-display {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.9);
+  margin-top: 10px;
+  font-style: italic;
+  max-width: 320px;
+  line-height: 1.4;
+  text-align: center;
+  white-space: pre-wrap;
 }
