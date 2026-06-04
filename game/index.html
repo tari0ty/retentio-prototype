@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>retentiOoo — Play to remember</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+  <!-- PRELOADER -->
+  <div id="preloader">
+    <div class="loader-container">
+      <h1 class="loading-logo">
+        <span>r</span><span>e</span><span>t</span><span>e</span><span>n</span><span>t</span><span>i</span><span>O</span><span>o</span><span>o</span>
+      </h1>
+      <p class="preloader-tagline">Play to remember</p>
+      <div class="loading-bar-container"><div class="loading-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- ACCOUNT GATE -->
+  <div id="account-gate-screen" class="hidden-layer">
+    <div class="gate-inner">
+      <h1 class="gate-logo">retenti<span class="gate-o">O</span><span class="gate-o">o</span><span class="gate-o">o</span></h1>
+      <p class="gate-tagline">Play to remember</p>
+      <p class="gate-sub">Sign in to save progress everywhere, unlock Ranked, and play live with others soon.</p>
+      <button type="button" id="gate-google-btn" class="gate-btn gate-btn-google">
+        <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button type="button" id="gate-skip-btn" class="gate-btn gate-btn-secondary">Play as guest</button>
+      <p id="gate-config-warning" class="gate-config-warning hidden-layer">
+        Add <code>config.js</code> (from <code>config.example.js</code>) to enable Google sign-in.
+      </p>
+      <p class="gate-hint">Guests: progress on this device only · Arcade only · no Ranked</p>
+    </div>
+  </div>
+
+  <nav id="app-navbar" class="app-navbar hidden-layer" aria-label="Main navigation">
+    <a href="#" id="app-nav-home" class="app-nav-logo">retentiOoo</a>
+    <div class="app-nav-actions">
+      <button type="button" id="app-nav-friends" class="app-nav-btn">Friends</button>
+      <button type="button" id="app-nav-profile" class="app-nav-btn">Profile</button>
+    </div>
+  </nav>
+
+  <!-- GAMES HUB -->
+  <div id="games-hub-screen" class="hidden-layer">
+    <div class="hub-inner">
+      <header class="hub-top">
+        <div class="hub-brand-block">
+          <h1 class="hub-logo">retentiOoo</h1>
+          <p class="hub-tagline">Play to remember</p>
+        </div>
+        <div class="hub-top-actions">
+          <span class="hub-friends-online-pill" title="Friends online">👥 <span id="hub-online-friends-count">0</span> online</span>
+          <button type="button" class="hub-icon-btn" id="hub-friends-btn" title="Friends">👥</button>
+          <button type="button" class="hub-icon-btn" id="hub-profile-btn" title="Profile">👤</button>
+        </div>
+      </header>
+
+      <div id="hub-schema-banner" class="hub-schema-banner hidden-layer"></div>
+
+      <section class="hub-section">
+        <h2 class="hub-section-title">⭐ Featured</h2>
+        <div class="hub-featured-row" id="hub-featured-row"></div>
+      </section>
+
+      <section class="hub-section hub-ad-section">
+        <h2 class="hub-section-title">Sponsored</h2>
+        <div class="hub-ad-slot" id="hub-ad-slot"></div>
+      </section>
+
+      <section class="hub-section">
+        <h2 class="hub-section-title">All Games</h2>
+        <div class="hub-games-grid" id="hub-games-grid"></div>
+      </section>
+
+      <footer class="hub-footer hidden-layer">
+        <a href="upload.html" class="hub-footer-link">📢 Place an Ad</a>
+        <button type="button" class="hub-footer-link hub-footer-btn" id="hub-parent-btn">👪 Parent Dashboard</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- COMING SOON (hub) -->
+  <div id="coming-soon-modal" class="modal-overlay">
+    <div class="modal-card soon-modal-card">
+      <button type="button" id="close-soon-btn" class="close-btn" aria-label="Close">&times;</button>
+      <div class="soon-emoji" id="soon-emoji">🍕</div>
+      <h2 id="soon-title">Fraction Pizza</h2>
+      <p class="soon-category" id="soon-category">Math</p>
+      <p class="soon-message">Coming soon! We're building this game for retentiOoo.</p>
+      <button type="button" class="action-btn" id="soon-ok-btn">Got it!</button>
+    </div>
+  </div>
+
+  <!-- RANKED LOCK (guests) -->
+  <div id="ranked-lock-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button type="button" id="close-ranked-lock-btn" class="close-btn" aria-label="Close">&times;</button>
+      <h2>🏆 Ranked is locked</h2>
+      <p class="modal-subtitle">Sign in with Google to compete in Ranked matches and climb the leaderboard.</p>
+      <button type="button" class="action-btn gate-btn-google ranked-lock-google" id="ranked-lock-signup-btn">
+        <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button type="button" class="win-btn win-btn-secondary" id="ranked-lock-skip-btn">Play as guest</button>
+      <button type="button" class="win-btn win-btn-secondary" id="ranked-lock-cancel-btn">Maybe later</button>
+    </div>
+  </div>
+
+  <!-- FRIENDS -->
+  <div id="friends-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button type="button" class="back-btn" id="back-from-friends">← Games</button>
+        <h2 class="panel-title">Friends</h2>
+      </div>
+      <p class="friends-hint">Link test accounts: copy your code on each Gmail login, then add friends on the other accounts.</p>
+      <div class="friends-code-card">
+        <span class="friends-code-label">Your friend code</span>
+        <div class="friends-code-row">
+          <code id="my-friend-code" class="friends-code-val">——</code>
+          <button type="button" class="back-btn" id="copy-friend-code-btn">Copy</button>
+        </div>
+      </div>
+      <div class="friends-add-card">
+        <label for="add-friend-code-input">Add friend by code</label>
+        <div class="friends-code-row">
+          <input type="text" id="add-friend-code-input" maxlength="12" placeholder="e.g. A1B2C3D4" autocomplete="off">
+          <button type="button" class="action-btn" id="add-friend-btn">Request</button>
+        </div>
+        <p id="add-friend-msg" class="friends-msg"></p>
+      </div>
+      <section id="friend-requests-card" class="friends-add-card hidden-layer">
+        <h3 class="friends-card-title">Friend requests</h3>
+        <div id="friend-requests-list" class="friends-list"></div>
+      </section>
+      <h3 class="section-title friends-list-title">Your friends</h3>
+      <div class="friends-content-grid">
+        <div id="friends-list" class="friends-list"></div>
+        <section id="friend-profile-panel" class="friend-chat-panel hidden-layer" aria-label="Friend profile">
+          <div class="friend-chat-header">
+            <span id="friend-profile-pic" class="friend-chat-avatar">Profile</span>
+            <div>
+              <h4 id="friend-profile-name" class="friend-chat-name">Friend</h4>
+              <p id="friend-profile-meta" class="friend-chat-subtitle">Public profile</p>
+            </div>
+          </div>
+          <div id="friend-profile-details" class="friend-profile-details"></div>
+        </section>
+        <section id="friend-chat-panel" class="friend-chat-panel hidden-layer" aria-label="Friend chat">
+          <div class="friend-chat-header">
+            <span id="friend-chat-avatar" class="friend-chat-avatar">👤</span>
+            <div>
+              <h4 id="friend-chat-name" class="friend-chat-name">Friend</h4>
+              <p class="friend-chat-subtitle">Private chat</p>
+            </div>
+          </div>
+          <div id="friend-chat-messages" class="chat-messages friend-chat-messages"></div>
+          <form id="friend-chat-form" class="chat-form">
+            <input type="text" id="friend-chat-input" maxlength="280" placeholder="Message your friend..." autocomplete="off">
+            <button type="submit" class="chat-send-btn">Send</button>
+          </form>
+        </section>
+      </div>
+      <p id="friends-guest-note" class="friends-guest-note hidden-layer">Sign in with Google to use friends and live Ranked.</p>
+    </div>
+  </div>
+
+  <!-- PARENT DASHBOARD (placeholder) -->
+  <div id="parent-dashboard-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button type="button" class="back-btn" id="back-from-parent">← Games</button>
+        <h2 class="panel-title">Parent Dashboard</h2>
+      </div>
+      <div class="parent-placeholder">
+        <span class="parent-placeholder-icon">👪</span>
+        <p>Parents will soon see progress, play time, and safety settings here.</p>
+        <p class="parent-placeholder-note">Prototype preview — connect a real account later.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TUTORIAL -->
+  <div id="tutorial-screen" class="hidden-layer">
+    <button id="tutorial-skip" class="tutorial-skip-btn">Skip Tutorial</button>
+    <div class="tutorial-progress">
+      <span class="t-dot active" id="t-dot-1"></span>
+      <span class="t-dot" id="t-dot-2"></span>
+      <span class="t-dot" id="t-dot-3"></span>
+    </div>
+    <!-- Step 1 -->
+    <div class="tutorial-step" id="t-step-1">
+      <h2 class="tutorial-title">Learn to Flip!</h2>
+      <p class="tutorial-text">Tap any card to reveal the hidden image.</p>
+      <div class="tutorial-stage">
+        <div class="t-finger" id="t-finger">👆</div>
+        <div class="t-card" id="t-card-flip">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🦁</div>
+          </div>
+        </div>
+      </div>
+      <button class="tutorial-next-btn" id="t-next-1" disabled>Next →</button>
+    </div>
+    <!-- Step 2 -->
+    <div class="tutorial-step hidden-layer" id="t-step-2">
+      <h2 class="tutorial-title">Find the Match!</h2>
+      <p class="tutorial-text">Tap another card to find its match. Remember its position if you miss!</p>
+      <div class="tutorial-stage">
+        <div class="t-card t-card-flipped">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🦁</div>
+          </div>
+        </div>
+        <div class="t-card" id="t-card-wrong">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🚀</div>
+          </div>
+        </div>
+        <div class="t-card" id="t-card-correct">
+          <div class="t-card-inner">
+            <div class="t-card-front"><span class="material-icons">question_mark</span></div>
+            <div class="t-card-back">🦁</div>
+          </div>
+        </div>
+      </div>
+      <p class="tutorial-hint" id="t-hint-2">Tap one of the face-down cards!</p>
+      <button class="tutorial-next-btn" id="t-next-2" disabled>Next →</button>
+    </div>
+    <!-- Step 3 -->
+    <div class="tutorial-step hidden-layer" id="t-step-3">
+      <h2 class="tutorial-title">Beat the Clock!</h2>
+      <p class="tutorial-text">Clear all pairs quickly! Fewer flips and faster times rank you higher.</p>
+      <div class="tutorial-stage t-stage-hud">
+        <div class="t-hud">
+          <div class="t-hud-stat"><span class="t-hud-icon">🕒</span><span class="t-hud-val" id="t-timer">0:00</span></div>
+          <div class="t-hud-stat"><span class="t-hud-icon">🔄</span><span class="t-hud-val" id="t-flips">0 Flips</span></div>
+        </div>
+        <div class="t-perfect-badge hidden-layer" id="t-perfect-badge">⭐⭐⭐ Perfect Score!</div>
+      </div>
+      <button class="tutorial-next-btn tutorial-start-btn" id="t-next-3">🚀 Start Playing!</button>
+    </div>
+  </div>
+
+  <!-- QUIZ: Nickname + Avatar -->
+  <div id="quiz-screen" class="hidden-layer">
+    <div class="quiz-container">
+      <h2>Create Your Player!</h2>
+      <div class="input-group quiz-nickname-group">
+        <label for="quiz-nickname">Your Nickname</label>
+        <input type="text" id="quiz-nickname" placeholder="e.g. SuperBrain" maxlength="20" autocomplete="off">
+        <span class="nickname-error hidden-layer" id="nickname-error">Please enter a nickname!</span>
+      </div>
+      <p class="quiz-avatar-label">Profile photo</p>
+      <div class="profile-photo-actions">
+        <label class="chat-send-btn profile-photo-btn">
+          Choose photo
+          <input type="file" id="quiz-photo-gallery" accept="image/*">
+        </label>
+        <label class="chat-send-btn profile-photo-btn">
+          Take snapshot
+          <input type="file" id="quiz-photo-camera" accept="image/*" capture="user">
+        </label>
+        <button type="button" class="back-btn" id="quiz-photo-skip">Skip</button>
+      </div>
+      <p class="quiz-avatar-label">Or pick a temporary icon</p>
+      <div class="kid-grid">
+        <button class="kid-card avatar-card" data-avatar="unicorn">🦄</button>
+        <button class="kid-card avatar-card" data-avatar="dragon">🐲</button>
+        <button class="kid-card avatar-card" data-avatar="robot">🤖</button>
+        <button class="kid-card avatar-card" data-avatar="alien">👽</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MATCHBOX: MODE SCREEN -->
+  <div id="game-mode-screen" class="hidden-layer">
+    <div class="game-mode-inner">
+      <div class="map-header">
+        <button type="button" class="back-btn" id="back-to-hub-from-matchbox">← All Games</button>
+        <div class="player-badge"><span id="gm-avatar">🦄</span> <span id="gm-playername">Player</span></div>
+      </div>
+      <h2 class="map-title">🃏 Matchbox</h2>
+      <p class="game-mode-subtitle">Flip. Match. Remember.</p>
+      <p class="game-mode-subtitle game-mode-sub-small">How do you want to play?</p>
+
+      <div class="game-mode-cards">
+        <button type="button" class="game-mode-card" id="adventure-mode-btn">
+          <span class="gm-emoji">🎮</span>
+          <div class="gm-info">
+            <span class="gm-title">Arcade</span>
+            <span class="gm-desc">Level 1 to Level 10 · Learn at your own pace</span>
+          </div>
+          <span class="gm-arrow">▶️</span>
+        </button>
+        <button type="button" class="game-mode-card game-mode-ranked" id="ranked-mode-btn">
+          <span class="gm-emoji">🏆</span>
+          <div class="gm-info">
+            <span class="gm-title">Ranked</span>
+            <span class="gm-desc" id="ranked-mode-desc">16 cards · 2 min · Compete globally</span>
+          </div>
+          <span class="gm-arrow" id="ranked-mode-arrow">▶️</span>
+          <span class="gm-lock-badge hidden-layer" id="ranked-lock-badge">🔒 Sign up</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUEST SELECT -->
+  <div id="quest-select-screen" class="hidden-layer">
+    <div class="quest-select-inner">
+      <div class="map-header">
+        <button class="back-btn" id="back-to-game-mode">← Back</button>
+        <div class="player-badge"><span id="qs-avatar">🦄</span> <span id="qs-playername">Player</span></div>
+      </div>
+      <h2 class="map-title">Choose Your Quest!</h2>
+      <div class="quest-list" id="quest-list"></div>
+    </div>
+  </div>
+
+  <!-- QUEST MAP -->
+  <div id="map-screen" class="hidden-layer">
+    <div class="map-inner">
+      <div class="map-header">
+        <button class="back-btn" id="back-to-quests">← Quests</button>
+        <div class="player-badge"><span id="map-avatar">🦄</span></div>
+        <div class="map-stats">🔥 <span id="streak-count">1</span> Day Streak</div>
+      </div>
+      <h2 class="map-title" id="quest-title">Quest 1</h2>
+      <p class="quest-subtitle" id="quest-subtitle">Animals 🦁</p>
+      <div class="adventure-path" id="adventure-path"></div>
+    </div>
+  </div>
+
+  <!-- RANKED: VOTE SCREEN -->
+  <div id="ranked-vote-screen" class="hidden-layer">
+    <div class="ranked-inner">
+      <div class="map-header">
+        <button class="back-btn" id="back-from-vote">← Back</button>
+        <div class="player-badge"><span id="rv-avatar">🦄</span> <span id="rv-name">Player</span></div>
+      </div>
+      <h2 class="map-title">Match Setup</h2>
+      <p class="ranked-subtitle">Adjust settings and confirm to join the lobby.</p>
+      <p class="ranked-live-status" id="ranked-live-status"></p>
+      <div class="vote-grid hidden-layer" id="vote-grid"></div>
+      <div class="vote-settings-card">
+        <label class="vote-slider-row">
+          <span>Tiles <strong id="vote-tiles-value">16</strong></span>
+          <input type="range" id="vote-tiles-slider" min="6" max="16" step="2" value="16">
+        </label>
+        <label class="vote-slider-row">
+          <span>Max time <strong id="vote-time-value">120s</strong></span>
+          <input type="range" id="vote-time-slider" min="60" max="180" step="30" value="120">
+        </label>
+        <label class="vote-slider-row">
+          <span>Max flips <strong id="vote-flips-value">40</strong></span>
+          <input type="range" id="vote-flips-slider" min="12" max="60" step="2" value="40">
+        </label>
+      </div>
+      <div class="vote-results" id="vote-results"></div>
+      <button class="ranked-action-btn hidden-layer" id="vote-confirm-btn">Confirm Vote ✓</button>
+    </div>
+  </div>
+
+  <!-- RANKED: WAITING ROOM + CHAT -->
+  <div id="ranked-waiting-screen" class="hidden-layer">
+    <div class="ranked-inner ranked-lobby-wide">
+      <div class="map-header">
+        <button type="button" class="back-btn" id="back-from-waiting">← Leave</button>
+        <div class="player-badge"><span id="rw-avatar">🦄</span> <span id="rw-name">Player</span></div>
+      </div>
+      <h2 class="map-title">⚔️ Live Lobby</h2>
+      <p class="ranked-subtitle" id="ranked-topic-label">Waiting for votes…</p>
+      <p class="ranked-live-status" id="ranked-lobby-player-count">Players: 1</p>
+      <p class="ranked-live-status chat-streak-pill">Chat streak: <span id="chat-streak-count">0</span> days</p>
+      <div class="ranked-lobby-grid">
+        <div class="lobby-players-col">
+          <h3 class="lobby-col-title">Players</h3>
+          <div class="waiting-room" id="waiting-room"></div>
+          <div class="waiting-countdown" id="waiting-countdown">
+            <p id="waiting-countdown-label">Match starts in</p>
+            <span id="waiting-timer">—</span>
+          </div>
+        </div>
+        <div class="lobby-chat-col">
+          <h3 class="lobby-col-title">💬 Chat</h3>
+          <div class="chat-messages" id="chat-messages"></div>
+          <form id="chat-form" class="chat-form">
+            <input type="text" id="chat-input" maxlength="280" placeholder="Say hi…" autocomplete="off">
+            <button type="submit" class="chat-send-btn">Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKED: GAME SCREEN -->
+  <div id="ranked-game-screen" class="hidden-layer">
+    <nav class="game-navbar">
+      <div class="nav-logo"><a href="#" id="ranked-logo">retentiOoo</a></div>
+      <div class="ranked-hud">
+        <div class="ranked-hud-stat">
+          <span class="ranked-hud-label">⏱ Time Left</span>
+          <span class="ranked-hud-val" id="ranked-timer">2:00</span>
+        </div>
+        <div class="ranked-hud-stat">
+          <span class="ranked-hud-label">🔄 Flips</span>
+          <span class="ranked-hud-val" id="ranked-flips">0</span>
+        </div>
+        <div class="ranked-hud-stat">
+          <span class="ranked-hud-label">📌 Topic</span>
+          <span class="ranked-hud-val" id="ranked-topic-hud">-</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="ranked-layout">
+      <div class="live-players-panel" id="live-players-panel"></div>
+      <div class="ranked-game-chat hidden-layer" id="ranked-game-chat">
+        <div class="chat-messages chat-messages-compact" id="game-chat-messages"></div>
+        <form id="game-chat-form" class="chat-form">
+          <input type="text" id="game-chat-input" maxlength="280" placeholder="Chat…" autocomplete="off">
+          <button type="submit" class="chat-send-btn">Send</button>
+        </form>
+      </div>
+      <!-- Game board -->
+      <div class="wrapper ranked-wrapper">
+        <ul class="cards" id="ranked-cards"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKED RESULTS SCREEN -->
+  <div id="ranked-results-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <h2 class="panel-title">⚔️ Match Results</h2>
+      </div>
+
+      <!-- Share card (this gets captured by html2canvas) -->
+      <div class="share-card ranked-share-card" id="ranked-share-card">
+        <div class="share-card-logo">retentiO<span>o</span></div>
+        <div class="share-card-mode">⚔️ Ranked Match</div>
+        <div class="share-card-topic" id="rs-topic">Animals 🦁</div>
+        <div class="share-card-rank" id="rs-rank">#1</div>
+        <div class="share-card-rank-label">of 10 players</div>
+        <div class="share-card-stats">
+          <div class="share-stat">
+            <span class="share-stat-label">Flips</span>
+            <span class="share-stat-val" id="rs-flips">0</span>
+          </div>
+          <div class="share-stat">
+            <span class="share-stat-label">Time</span>
+            <span class="share-stat-val" id="rs-time">0:00</span>
+          </div>
+          <div class="share-stat">
+            <span class="share-stat-label">Score</span>
+            <span class="share-stat-val" id="rs-score">0</span>
+          </div>
+        </div>
+        <div class="share-card-url">retentioo.com</div>
+      </div>
+
+      <!-- Full results list -->
+      <div class="ranked-results-list" id="ranked-results-list"></div>
+
+      <div class="ranked-result-btns">
+        <button class="win-btn win-btn-primary" id="share-ranked-btn">📤 Share Result</button>
+        <button class="win-btn win-btn-secondary" id="play-again-ranked-btn">Play Again ▶️</button>
+        <button class="win-btn win-btn-secondary" id="back-to-mode-btn">← Game Mode</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADVENTURE GAME SCREEN -->
+  <div id="game-screen" class="hidden-layer">
+    <nav class="game-navbar">
+      <div class="nav-logo"><a href="#" id="nav-logo-link">retentiOoo</a></div>
+      <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+        <span class="hamburger"></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#" id="nav-hub-link">🏠 All Games</a></li>
+        <li><a href="#" id="nav-adventure-link">🎮 Arcade</a></li>
+        <li><a href="#" id="nav-ranked-link">🏆 Ranked</a></li>
+        <li><a href="#" id="leaderboard-link">Leaderboard</a></li>
+        <li><button id="auth-btn">Sign Up</button></li>
+      </ul>
+    </nav>
+
+    <div class="wrapper">
+      <div class="stats-container">
+        <div class="stat"><span class="stat-label">Game</span><span class="stat-value" id="current-subject-label">Matchbox</span></div>
+        <div class="stat"><span class="stat-label">Level</span><span class="stat-value" id="current-level-label">1</span></div>
+        <div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timer">0:00</span></div>
+        <div class="stat"><span class="stat-label">Flips</span><span class="stat-value" id="flips">0</span></div>
+      </div>
+      <ul class="cards" id="game-cards"></ul>
+    </div>
+
+    <section class="mobile-feed-hero" aria-label="Mobile social feed preview">
+      <div class="mobile-feed-card">
+        <div class="mobile-feed-header-row">
+          <div>
+            <p class="mobile-pill">Live Retentio</p>
+            <h2>Portrait feed mode</h2>
+          </div>
+          <span class="mobile-live-dot">● Live</span>
+        </div>
+        <div class="mobile-canvas-shell">
+          <canvas id="mobile-game-canvas" width="420" height="280" aria-label="Live physics game canvas"></canvas>
+          <div class="mobile-grow-badge">+ Combo</div>
+          <div class="mobile-control-overlay" aria-label="Touch controls">
+            <button type="button" class="control-btn control-left">←</button>
+            <button type="button" class="control-btn control-up">↑</button>
+            <button type="button" class="control-btn control-right">→</button>
+          </div>
+        </div>
+        <div class="mobile-feed-caption">
+          <span>Color-burst puzzle</span>
+          <strong>Catch the glowing balls before they drop.</strong>
+        </div>
+      </div>
+    </section>
+
+    <div class="manual-ad-box" style="display: none;">
+      <video autoplay loop muted playsinline class="bg-video">
+        <source src="./ads/Ad.mp4" type="video/mp4">
+      </video>
+      <p class="ad-label">To place your Ad</p>
+      <a href="https://wa.me/2348135232889" class="ad-cta" target="_blank" rel="noopener noreferrer">
+        <span class="ad-text">Contact</span>
+        <span class="brand-circle"><img src="images/logo.png" alt="retentiOo logo" class="circle-img"></span>
+      </a>
+    </div>
+
+    <div class="how-to-play" id="how-to-play">
+      <h2>📝 How to Play</h2>
+      <ol>
+        <li><strong>Flip a Card:</strong> Click any face-down card to reveal the hidden image.</li>
+        <li><strong>Find its Match:</strong> Click a second card to flip it over.</li>
+        <li><strong>It's a Match!</strong> Matched cards stay face-up.</li>
+        <li><strong>Not a Match?</strong> Both cards flip back. Memorize their positions!</li>
+        <li><strong>Win the Game:</strong> Match all pairs to complete the level.</li>
+      </ol>
+    </div>
+  </div>
+
+  <nav class="mobile-bottom-dock" aria-label="Bottom navigation">
+    <button type="button" class="dock-chip dock-logo" data-action="home" aria-label="Home">R</button>
+    <button type="button" class="dock-chip" data-action="games" aria-label="All games">🎮</button>
+    <button type="button" class="dock-chip" data-action="profile" aria-label="Profile">👤</button>
+    <button type="button" class="dock-chip" data-action="friends" aria-label="Friends">💬</button>
+    <button type="button" class="dock-chip dock-create" data-action="play" aria-label="Play game">＋</button>
+  </nav>
+
+  <!-- PROFILE SCREEN -->
+  <div id="profile-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button class="back-btn" id="back-from-profile">← Back</button>
+        <h2 class="panel-title">My Profile</h2>
+      </div>
+      <div class="profile-hero">
+        <div class="profile-avatar" id="profile-avatar">🦄</div>
+        <div class="profile-name" id="profile-name">Player</div>
+        <div class="profile-email-row" id="profile-email-row"></div>
+        <div class="profile-badge" id="profile-badge">Quest 1 · Level 1</div>
+        <div class="profile-rank-badge" id="profile-rank-badge">🏆 Global Rank #—</div>
+        <div class="profile-friends-badge" id="profile-friends-badge">👥 0 friends</div>
+        <button type="button" class="profile-signout-btn hidden-layer" id="profile-signout-btn">Sign out</button>
+      </div>
+      <div class="profile-section">
+        <h3 class="section-title">Profile Settings</h3>
+        <div class="profile-settings-card">
+          <label class="profile-field-label">Profile picture</label>
+          <div class="profile-photo-actions">
+            <label class="chat-send-btn profile-photo-btn">
+              Gallery
+              <input type="file" id="profile-photo-gallery" accept="image/*">
+            </label>
+            <label class="chat-send-btn profile-photo-btn">
+              Snapshot
+              <input type="file" id="profile-photo-camera" accept="image/*" capture="user">
+            </label>
+            <button type="button" class="back-btn" id="profile-photo-skip-btn">Skip</button>
+          </div>
+          <label class="profile-toggle-row">
+            <input type="checkbox" id="profile-public-toggle">
+            <span>Let friends see my profile info</span>
+          </label>
+          <label class="profile-toggle-row">
+            <input type="checkbox" id="profile-email-visible-toggle">
+            <span>Show my Google email in public profile</span>
+          </label>
+        </div>
+      </div>
+      <div class="profile-section">
+        <h3 class="section-title">Best Scores By Game</h3>
+        <div class="progress-cards" id="progress-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD SCREEN -->
+  <div id="leaderboard-screen" class="hidden-layer fullscreen-panel">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <button class="back-btn" id="back-from-leaderboard">← Back</button>
+        <h2 class="panel-title">Leaderboard</h2>
+      </div>
+      <div class="lb-global-header">
+        <span class="lb-col-head">Rank</span>
+        <span class="lb-col-head">Player</span>
+        <span class="lb-col-head">🔄 Flips</span>
+        <span class="lb-col-head">🕒 Time</span>
+      </div>
+      <div class="leaderboard-list" id="leaderboard-list"></div>
+      <p class="leaderboard-note">🔒 Log in to appear on the global leaderboard.</p>
+    </div>
+  </div>
+
+  <!-- WIN MODAL (Adventure) -->
+  <div id="win-modal" class="modal-overlay">
+    <div class="modal-card win-card">
+      <!-- Share card captured by html2canvas -->
+      <div class="share-card arcade-share-card" id="arcade-share-card">
+        <div class="share-card-logo">retentiO<span>o</span></div>
+        <div class="share-card-mode">🎮 Matchbox · Arcade</div>
+        <div class="share-card-topic" id="ac-topic">Animals 🦁 — Mammals</div>
+        <div class="share-card-stars" id="ac-stars">⭐⭐⭐</div>
+        <div class="share-card-stats">
+          <div class="share-stat">
+            <span class="share-stat-label">Flips</span>
+            <span class="share-stat-val" id="ac-flips">0</span>
+          </div>
+          <div class="share-stat">
+            <span class="share-stat-label">Time</span>
+            <span class="share-stat-val" id="ac-time">0:00</span>
+          </div>
+        </div>
+        <div class="share-card-url">retentioo.com</div>
+      </div>
+
+      <h2 id="win-title">Level 1 Complete!</h2>
+      <p id="win-quest-label" class="win-quest-label">Animals 🦁 — Mammals</p>
+      <div class="win-stars">
+        <span class="win-star" id="win-star-1">☆</span>
+        <span class="win-star" id="win-star-2">☆</span>
+        <span class="win-star" id="win-star-3">☆</span>
+      </div>
+      <div class="win-stats">
+        <div class="win-stat"><span class="win-stat-label">Time</span><span class="win-stat-value" id="win-time">0:00</span></div>
+        <div class="win-stat"><span class="win-stat-label">Flips</span><span class="win-stat-value" id="win-flips">0</span></div>
+        <div class="win-stat"><span class="win-stat-label">Best</span><span class="win-stat-value" id="win-best">-</span></div>
+      </div>
+      <div class="win-buttons">
+        <button id="share-arcade-btn" class="win-btn win-btn-share">📤 Share Result</button>
+        <button id="win-claim-btn" class="win-btn win-btn-primary">🔐 Login to Claim</button>
+        <button id="win-continue-btn" class="win-btn win-btn-secondary">Continue ▶️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-card auth-modal-card">
+      <button type="button" id="close-modal-btn" class="close-btn" aria-label="Close">&times;</button>
+      <h2 id="modal-title">Sign in</h2>
+      <p id="modal-subtitle">Use Google to save progress, add friends, and play live Ranked.</p>
+      <button type="button" id="auth-google-btn" class="gate-btn gate-btn-google auth-google-full">
+        <svg class="google-logo" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button type="button" id="auth-skip-btn" class="gate-btn gate-btn-secondary auth-skip-full">Play as guest</button>
+      <p class="auth-modal-hint">Guests: this device only · Arcade only · no Ranked or friends</p>
+    </div>
+  </div>
+
+  <div id="cloud-save-toast" class="cloud-save-toast hidden-layer" role="status"></div>
+
+  <script src="config.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>

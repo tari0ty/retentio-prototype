@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "game/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "admin/upload.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/game/index.html" },
+    { "src": "/upload.html", "dest": "/admin/upload.html" },
+    { "src": "/(.*)", "dest": "/game/$1" }
+  ]
+}

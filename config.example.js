@@ -5,4 +5,6 @@ window.RETENTIOOO_CONFIG = {
   supabaseUrl: "https://YOUR_PROJECT_REF.supabase.co",
   // Settings → API → anon / publishable (public) key
   supabaseAnonKey: "YOUR_SUPABASE_ANON_KEY",
+  // Only this Google account may upload ad videos
+  adminEmail: "your-google-email@example.com",
 };
